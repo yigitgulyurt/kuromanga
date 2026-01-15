@@ -17,3 +17,8 @@ BASE_STORAGE_PATH = os.environ.get(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage", "manga"),
 )
 
+RUN_LOGS_PATH = os.environ.get(
+    "SCRAPER_RUN_LOGS_PATH",
+    os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage", "run_logs"),
+)
+

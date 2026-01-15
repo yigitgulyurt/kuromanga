@@ -11,3 +11,7 @@ class BaseConfig:
         "STORAGE_MANGA_PATH",
         os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "storage", "manga"),
     )
+    STORAGE_RUN_LOGS_PATH = os.environ.get(
+        "STORAGE_RUN_LOGS_PATH",
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "storage", "run_logs"),
+    )

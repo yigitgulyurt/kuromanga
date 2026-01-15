@@ -3,9 +3,15 @@ from app.blueprints.status import status_bp
 from app.models.manga import Manga
 from app.models.chapter import Chapter
 from app.models.page import Page
-from app.services.storage_health import check_storage_health
+from app.services.storage_health import storage_health
+from app.services.run_history import get_runs_status
 import shutil
 import os
+
+@status_bp.route("/runs")
+def runs_status():
+    data = get_runs_status()
+    return jsonify(data)
 
 @status_bp.route("/")
 def dashboard():
@@ -31,8 +37,7 @@ def status_data():
     if storage_path:
         # Health Check
         try:
-            # check_storage_health handles its own caching
-            health_data = check_storage_health(storage_path)
+            health_data = storage_health(storage_path, force=False)
         except Exception as e:
             health_data = {"error": str(e)}
 
