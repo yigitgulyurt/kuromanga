@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Manga List{% endblock %}
+
+{% block content %}
+<h2>Manga Listesi</h2>
+<ul>
+    {% for manga in manga_items %}
+        <li>
+            <a href="{{ url_for('manga.manga_detail', manga_id=manga.id) }}">
+                {{ manga.title }}
+            </a>
+        </li>
+    {% else %}
+        <li>Hiç manga bulunamadı.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
+

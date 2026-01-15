@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ manga.title }}{% endblock %}
+
+{% block content %}
+<h2>{{ manga.title }}</h2>
+{% if manga.description %}
+    <p>{{ manga.description }}</p>
+{% endif %}
+
+<h3>Chapters</h3>
+<ul>
+    {% for chapter in chapters %}
+        <li>
+            <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=chapter.id) }}">
+                Chapter {{ chapter.number }}{% if chapter.title %}: {{ chapter.title }}{% endif %}
+            </a>
+        </li>
+    {% else %}
+        <li>Bu manga için henüz chapter yok.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
+
