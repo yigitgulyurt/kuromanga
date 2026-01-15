@@ -1,17 +1,5 @@
 **/__pycache__/
-__pycache__/
-app/**/__pycache__/
-app/blueprints/__pycache__/
-app/config/__pycache__/
-app/models/__pycache__/
-app/repositories/__pycache__/
-app/services/__pycache__/
 scraper/README.md
-
-
-
-
-
 *.py[cod]
 *.pyo
 *.pyd

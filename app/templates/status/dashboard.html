@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Status Dashboard</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; color: #333; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat-item { text-align: center; padding: 10px; background: #f9f9f9; border-radius: 4px; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #333; }
+        .stat-label { color: #666; font-size: 14px; margin-top: 5px; }
+        .status-ok { color: green; }
+        .status-warn { color: orange; }
+        .status-err { color: red; }
+        #loading { text-align: center; font-style: italic; color: #666; margin-top: 50px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>System Status Dashboard</h1>
+        
+        <div id="loading">Loading system status...</div>
+
+        <div id="dashboard" style="display:none;">
+            <div class="card">
+                <h2>Database Statistics</h2>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="db-mangas">-</div>
+                        <div class="stat-label">Mangas</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="db-chapters">-</div>
+                        <div class="stat-label">Chapters</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="db-pages">-</div>
+                        <div class="stat-label">Pages</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Disk Usage (Storage)</h2>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="disk-free">-</div>
+                        <div class="stat-label">Free Space</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="disk-total">-</div>
+                        <div class="stat-label">Total Space</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="disk-percent">-</div>
+                        <div class="stat-label">Free %</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Storage Health Check</h2>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="health-missing-disk">-</div>
+                        <div class="stat-label">Missing on Disk (In DB but not Disk)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="health-missing-db">-</div>
+                        <div class="stat-label">Missing in DB (On Disk but not DB)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="health-broken">-</div>
+                        <div class="stat-label">Broken Chapters (Empty/Partial)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/status/data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+
+                    // DB Stats
+                    if (data.db_stats) {
+                        document.getElementById('db-mangas').textContent = data.db_stats.mangas;
+                        document.getElementById('db-chapters').textContent = data.db_stats.chapters;
+                        document.getElementById('db-pages').textContent = data.db_stats.pages;
+                    }
+
+                    // Disk Usage
+                    if (data.disk_usage && !data.disk_usage.error && data.disk_usage.total_gb) {
+                        document.getElementById('disk-free').textContent = data.disk_usage.free_gb + ' GB';
+                        document.getElementById('disk-total').textContent = data.disk_usage.total_gb + ' GB';
+                        const percent = data.disk_usage.percent_free;
+                        const percentEl = document.getElementById('disk-percent');
+                        percentEl.textContent = percent + '%';
+                        if (percent < 10) percentEl.className = 'stat-value status-err';
+                        else if (percent < 20) percentEl.className = 'stat-value status-warn';
+                        else percentEl.className = 'stat-value status-ok';
+                    } else {
+                         document.getElementById('disk-free').textContent = 'N/A';
+                         document.getElementById('disk-total').textContent = 'N/A';
+                         document.getElementById('disk-percent').textContent = 'N/A';
+                    }
+
+                    // Health Stats
+                    const health = data.storage_health;
+                    if (health && !health.error) {
+                        const missingDiskCount = Object.keys(health.missing_on_disk || {}).length;
+                        const missingDbCount = Object.keys(health.missing_in_db || {}).length;
+                        const brokenCount = (health.broken_chapters || []).length;
+
+                        const mdEl = document.getElementById('health-missing-disk');
+                        mdEl.textContent = missingDiskCount;
+                        if (missingDiskCount > 0) mdEl.className = 'stat-value status-err';
+                        else mdEl.className = 'stat-value status-ok';
+
+                        const mdbEl = document.getElementById('health-missing-db');
+                        mdbEl.textContent = missingDbCount;
+                        if (missingDbCount > 0) mdbEl.className = 'stat-value status-warn';
+                        else mdbEl.className = 'stat-value status-ok';
+                        
+                        const brEl = document.getElementById('health-broken');
+                        brEl.textContent = brokenCount;
+                        if (brokenCount > 0) brEl.className = 'stat-value status-err';
+                        else brEl.className = 'stat-value status-ok';
+                    } else {
+                        document.getElementById('health-missing-disk').textContent = 'Error';
+                        document.getElementById('health-missing-db').textContent = 'Error';
+                        document.getElementById('health-broken').textContent = 'Error';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loading').textContent = 'Error loading status: ' + err;
+                    document.getElementById('loading').style.color = 'red';
+                });
+        });
+    </script>
+</body>
+</html>
