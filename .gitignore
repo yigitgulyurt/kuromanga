@@ -37,3 +37,4 @@ kuromanga.db
 app/__pycache__
 app/__pycache__/
 app/__pycache__/__init__.cpython-313.pyc
+/app/__pycache__

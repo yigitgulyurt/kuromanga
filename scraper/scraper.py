@@ -4,7 +4,8 @@ import argparse
 import os
 import re
 import sys
-from typing import List
+import subprocess
+from typing import List, Set
 from urllib.parse import urljoin, urlparse
 from .logger import RunLogger
 
@@ -22,6 +23,35 @@ def parse_args() -> argparse.Namespace:
         "--manga-url",
         required=True,
         help="URL of the manga chapter page to scrape.",
+    )
+    parser.add_argument(
+        "--manga-name",
+        required=True,
+        help="Human readable manga name (used for storage slug and logs).",
+    )
+    parser.add_argument(
+        "--formats",
+        default="jpg",
+        help="Comma-separated list of allowed image formats (e.g., jpg,png,webp). Default: jpg",
+    )
+    parser.add_argument(
+        "--start-url",
+        help="Starting chapter URL for multi-chapter scraping.",
+    )
+    parser.add_argument(
+        "--chapters",
+        type=int,
+        help="Number of chapters to scrape starting from --start-url (auto-increment).",
+    )
+    parser.add_argument(
+        "--rename-only",
+        action="store_true",
+        help="Do not download; rename existing chapter files to zero-padded canonical format.",
+    )
+    parser.add_argument(
+        "--run-indexer",
+        action="store_true",
+        help="After scraping/renaming, trigger the indexer via subprocess (keeps scraper decoupled).",
     )
     return parser.parse_args()
 
@@ -93,18 +123,109 @@ def determine_filename(index: int, total: int, image_url: str) -> str:
     return f"{padded_index}{ext}"
 
 
-def scrape_chapter(chapter_url: str) -> str:
+def slugify_name(name: str) -> str:
+    s = name.strip().lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    s = re.sub(r"-{2,}", "-", s)
+    return s.strip("-") or "manga"
+
+
+def parse_formats_arg(formats_arg: str) -> Set[str]:
+    allowed = set()
+    for part in (formats_arg or "").split(","):
+        p = part.strip().lower()
+        if p in {"jpg", "jpeg"}:
+            allowed.update({".jpg", ".jpeg"})
+        elif p == "png":
+            allowed.add(".png")
+        elif p == "webp":
+            allowed.add(".webp")
+        # silently ignore invalid tokens
+    if not allowed:
+        allowed.update({".jpg", ".jpeg"})
+    return allowed
+
+
+def filter_by_formats(urls: List[str], allowed_exts: Set[str]) -> List[str]:
+    result = []
+    for u in urls:
+        parsed = urlparse(u)
+        _, ext = os.path.splitext(parsed.path.lower())
+        if ext in allowed_exts:
+            result.append(u)
+    return result
+
+
+def increment_chapter_url(base_url: str, next_chapter_number: int) -> str:
+    parsed = urlparse(base_url)
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    if not segments:
+        return base_url
+    last = segments[-1]
+    if re.search(r"\d+", last):
+        new_last = re.sub(r"(\d+)(?!.*\d)", str(next_chapter_number), last, count=1)
+    else:
+        new_last = f"{last}-{next_chapter_number}"
+    segments[-1] = new_last
+    new_path = "/" + "/".join(segments)
+    return parsed._replace(path=new_path).geturl()
+
+
+def rename_chapter_files(manga_slug: str, chapter_number: str) -> str:
+    chapter_dir = build_output_directory(manga_slug, chapter_number)
+    if not os.path.isdir(chapter_dir):
+        return chapter_dir
+    files = [f for f in os.listdir(chapter_dir) if os.path.isfile(os.path.join(chapter_dir, f))]
+    files.sort()
+    total = len(files)
+    width = max(3, len(str(total)))
+    for idx, fname in enumerate(files, start=1):
+        _, ext = os.path.splitext(fname)
+        ext = (ext or ".jpg").lower()
+        target = f"{str(idx).zfill(width)}{ext}"
+        if fname != target:
+            src_path = os.path.join(chapter_dir, fname)
+            dst_path = os.path.join(chapter_dir, target)
+            if os.path.exists(dst_path):
+                tmp_path = os.path.join(chapter_dir, f"__tmp_{idx}{ext}")
+                os.replace(src_path, tmp_path)
+                os.replace(tmp_path, dst_path)
+            else:
+                os.replace(src_path, dst_path)
+    return chapter_dir
+
+
+def trigger_indexer_subprocess() -> None:
+    try:
+        cmd = [
+            sys.executable,
+            "-c",
+            (
+                "import os;"
+                "from app.services.storage_indexer import index_storage;"
+                "base=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage','manga');"
+                "logs=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage','run_logs');"
+                "print(index_storage(base, run_logs_path=logs, force=True))"
+            ),
+        ]
+        subprocess.run(cmd, check=False)
+    except Exception:
+        pass
+
+
+def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], logger: RunLogger) -> str:
     html = fetch_html(chapter_url)
 
     image_urls = extract_image_urls(html, chapter_url)
     if not image_urls:
         raise RuntimeError("No image URLs were found on the provided page.")
 
-    manga_slug = derive_manga_slug(chapter_url)
     chapter_number = derive_chapter_number(chapter_url)
     output_dir = build_output_directory(manga_slug, chapter_number)
 
+    image_urls = filter_by_formats(image_urls, allowed_exts)
     total = len(image_urls)
+    logger.update_stats(manga=1, chapters=1, pages=total)
     for index, image_url in enumerate(image_urls, start=1):
         filename = determine_filename(index, total, image_url)
         destination_path = os.path.join(output_dir, filename)
@@ -116,17 +237,46 @@ def scrape_chapter(chapter_url: str) -> str:
 def main() -> None:
     args = parse_args()
     chapter_url = args.manga_url
+    manga_slug = slugify_name(args.manga_name)
+    allowed_exts = parse_formats_arg(args.formats)
+    logger = RunLogger("scraper")
 
     try:
-        output_dir = scrape_chapter(chapter_url)
+        if args.rename_only:
+            if args.chapters and args.start_url:
+                start = 1
+                for i in range(args.chapters):
+                    next_num = start + i
+                    target_url = increment_chapter_url(args.start_url, next_num)
+                    chapter_number = derive_chapter_number(target_url)
+                    rename_chapter_files(manga_slug, chapter_number)
+                output_dir = build_output_directory(manga_slug, derive_chapter_number(args.start_url))
+            else:
+                chapter_number = derive_chapter_number(chapter_url)
+                output_dir = rename_chapter_files(manga_slug, chapter_number)
+            logger.finish()
+        elif args.chapters and args.start_url:
+            output_dir = ""
+            start = 1
+            for i in range(args.chapters):
+                next_num = start + i
+                target_url = increment_chapter_url(args.start_url, next_num)
+                output_dir = scrape_chapter(target_url, manga_slug, allowed_exts, logger)
+            logger.finish()
+        else:
+            output_dir = scrape_chapter(chapter_url, manga_slug, allowed_exts, logger)
+            logger.finish()
     except DownloadError as exc:
+        logger.fail(str(exc))
         raise SystemExit(f"Download error while scraping chapter: {exc}") from exc
     except Exception as exc:
+        logger.fail(str(exc))
         raise SystemExit(f"Unexpected error while scraping chapter: {exc}") from exc
 
     sys.stdout.write(f"Images saved under: {output_dir}{os.linesep}")
+    if args.run_indexer:
+        trigger_indexer_subprocess()
 
 
 if __name__ == "__main__":
     main()
-
