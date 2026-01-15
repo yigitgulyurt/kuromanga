@@ -12,13 +12,17 @@
     <p>Son okuduğun sayfa: {{ last_page_number }}</p>
 {% endif %}
 
-<div>
-    {% for page in pages %}
-        <div>
-            <img src="{{ page.image_path }}" alt="Page {{ page.number }}">
-        </div>
-    {% else %}
-        <p>Bu chapter için sayfa bulunamadı.</p>
-    {% endfor %}
+<div id="reader-root" data-manga-id="{{ manga.id }}" data-chapter-id="{{ chapter.id }}">
+    <div>
+        {% for page in pages %}
+            <div class="manga-page" data-page-number="{{ page.number }}">
+                <img src="{{ page.image_path }}" alt="Page {{ page.number }}">
+            </div>
+        {% else %}
+            <p>Bu chapter için sayfa bulunamadı.</p>
+        {% endfor %}
+    </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/reading_progress.js') }}"></script>
 {% endblock %}
