@@ -17,10 +17,11 @@ def create_app(config_object=None):
     from app.blueprints.manga import manga_bp
     from app.blueprints.user_content import user_content_bp
     from app.blueprints.indexer import indexer_bp
+    from app.blueprints.health import health_bp
 
     app.register_blueprint(manga_bp)
     app.register_blueprint(user_content_bp)
     app.register_blueprint(indexer_bp)
+    app.register_blueprint(health_bp)
 
     return app
-
