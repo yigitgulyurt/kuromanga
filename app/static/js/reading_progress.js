@@ -16,6 +16,36 @@
             return;
         }
 
+        var lastPageAttr = root.getAttribute("data-last-page-number");
+        var initialPageNumber = lastPageAttr ? parseInt(lastPageAttr, 10) : null;
+        if (initialPageNumber) {
+            var target = root.querySelector(
+                '[data-page-number="' + initialPageNumber + '"]'
+            );
+            if (target && typeof target.scrollIntoView === "function") {
+                try {
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+                } catch (e) {
+                    try {
+                        target.scrollIntoView(true);
+                    } catch (e2) {
+                        console.error(
+                            "Failed to scroll to last page",
+                            e2
+                        );
+                    }
+                }
+            } else if (!target) {
+                console.error(
+                    "Last page element not found for page",
+                    initialPageNumber
+                );
+            }
+        }
+
         var lastSentPage = null;
         var visiblePages = {};
 
