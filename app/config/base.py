@@ -7,4 +7,7 @@ class BaseConfig:
         "DATABASE_URL", "sqlite:///kuromanga.db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
+    STORAGE_MANGA_PATH = os.environ.get(
+        "STORAGE_MANGA_PATH",
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "storage", "manga"),
+    )
