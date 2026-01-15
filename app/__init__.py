@@ -15,8 +15,10 @@ def create_app(config_object=None):
     db.init_app(app)
 
     from app.blueprints.manga import manga_bp
+    from app.blueprints.user_content import user_content_bp
 
     app.register_blueprint(manga_bp)
+    app.register_blueprint(user_content_bp)
 
     return app
 

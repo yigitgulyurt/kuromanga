@@ -3,10 +3,12 @@ from flask import render_template, abort
 from app.blueprints.manga import manga_bp
 from app.services.manga_service import MangaService
 from app.services.chapter_service import ChapterService
+from app.services.reading_progress_service import ReadingProgressService
 
 
 manga_service = MangaService()
 chapter_service = ChapterService()
+reading_progress_service = ReadingProgressService()
 
 
 @manga_bp.route("/")
@@ -33,10 +35,13 @@ def chapter_read(manga_id, chapter_id):
     chapter, pages = chapter_service.get_chapter_with_pages(chapter_id)
     if not chapter or chapter.manga_id != manga.id:
         abort(404)
+    user_id = 1
+    progress = reading_progress_service.get_progress(user_id, manga.id, chapter.id)
+    last_page_number = progress.last_page_number if progress else None
     return render_template(
         "manga/read.html",
         manga=manga,
         chapter=chapter,
         pages=pages,
+        last_page_number=last_page_number,
     )
-

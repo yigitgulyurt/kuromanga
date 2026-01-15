@@ -8,6 +8,10 @@
     <h3>{{ chapter.title }}</h3>
 {% endif %}
 
+{% if last_page_number %}
+    <p>Son okuduğun sayfa: {{ last_page_number }}</p>
+{% endif %}
+
 <div>
     {% for page in pages %}
         <div>
@@ -18,4 +22,3 @@
     {% endfor %}
 </div>
 {% endblock %}
-

@@ -2,6 +2,7 @@ from app import create_app, db
 from app.models.manga import Manga
 from app.models.chapter import Chapter
 from app.models.page import Page
+from app.models.reading_progress import ReadingProgress
 
 
 app = create_app()
@@ -15,4 +16,3 @@ def init_db():
 
 if __name__ == "__main__":
     app.run()
-
