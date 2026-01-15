@@ -6,12 +6,12 @@ import re
 import sys
 from typing import List
 from urllib.parse import urljoin, urlparse
+from .logger import RunLogger
 
 from bs4 import BeautifulSoup
 
 from . import config
 from .downloader import DownloadError, download_image, fetch_html
-from .logger import RunLogger
 
 
 def parse_args() -> argparse.Namespace:
@@ -93,7 +93,7 @@ def determine_filename(index: int, total: int, image_url: str) -> str:
     return f"{padded_index}{ext}"
 
 
-def scrape_chapter(chapter_url: str, logger: RunLogger) -> str:
+def scrape_chapter(chapter_url: str) -> str:
     html = fetch_html(chapter_url)
 
     image_urls = extract_image_urls(html, chapter_url)
@@ -105,8 +105,6 @@ def scrape_chapter(chapter_url: str, logger: RunLogger) -> str:
     output_dir = build_output_directory(manga_slug, chapter_number)
 
     total = len(image_urls)
-    logger.update_stats(manga=1, chapters=1, pages=total)
-
     for index, image_url in enumerate(image_urls, start=1):
         filename = determine_filename(index, total, image_url)
         destination_path = os.path.join(output_dir, filename)
@@ -118,16 +116,12 @@ def scrape_chapter(chapter_url: str, logger: RunLogger) -> str:
 def main() -> None:
     args = parse_args()
     chapter_url = args.manga_url
-    logger = RunLogger("scraper")
 
     try:
-        output_dir = scrape_chapter(chapter_url, logger)
-        logger.finish()
+        output_dir = scrape_chapter(chapter_url)
     except DownloadError as exc:
-        logger.fail(str(exc))
         raise SystemExit(f"Download error while scraping chapter: {exc}") from exc
     except Exception as exc:
-        logger.fail(str(exc))
         raise SystemExit(f"Unexpected error while scraping chapter: {exc}") from exc
 
     sys.stdout.write(f"Images saved under: {output_dir}{os.linesep}")
