@@ -3,6 +3,7 @@
 import os
 import time
 import json
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -108,7 +109,7 @@ def _scan_manga_slug_dir(slug_dir: Path) -> Tuple[int, int]:
     return (chapters_added, pages_added)
 
 
-def _write_indexer_log(run_logs_path: str, status: str, stats: Dict, start_time: datetime, error: Optional[str] = None):
+def _write_indexer_log(run_logs_path: str, status: str, stats: Dict, start_time: datetime, error: Optional[str] = None, processed_slugs: Optional[List[str]] = None, files_written: int = 0, chapter_range: Optional[str] = None):
     if not run_logs_path:
         return
     
@@ -116,12 +117,23 @@ def _write_indexer_log(run_logs_path: str, status: str, stats: Dict, start_time:
     filepath = os.path.join(run_logs_path, filename)
     
     data = {
+        "run_id": str(uuid.uuid4()),
         "component": "indexer",
+        "type": "index",
+        "manga_slug": None,
+        "manga_name": None,
+        "start_url": None,
+        "chapter_count": None,
+        "chapter_range": chapter_range,
+        "allowed_formats": None,
         "started_at": start_time.isoformat(),
-        "finished_at": datetime.now().isoformat() if status in ("success", "failed") else None,
+        "finished_at": datetime.now().isoformat() if status in ("success", "partial", "failed") else None,
         "status": status,
+        "error": error,
+        "files_written": files_written,
+        "indexer_triggered": False,
         "stats": stats,
-        "error": error
+        "processed_slugs": processed_slugs or [],
     }
     
     try:
@@ -144,32 +156,23 @@ def index_storage(base_path: str, run_logs_path: str = None, force: bool = False
     now = time.time()
     if not force and _LAST_SCAN_TS and (now - _LAST_SCAN_TS) < _SCAN_INTERVAL_SEC:
         if run_logs_path:
-            # Skip update, but maybe log that it was skipped? 
-            # Or just don't log "running" if skipped?
-            # User requirement: "Indexer çalışmaya başladığında... log oluştur"
-            # But if we return early, we technically didn't run a full scan.
-            # I will just return early without logging success/fail if skipped.
-            # But wait, I already logged "running". I should update to "success" (skipped).
-             _write_indexer_log(run_logs_path, "success", stats, start_time, error="Skipped (cached)")
+             _write_indexer_log(run_logs_path, "partial", stats, start_time, error="Skipped (cached)", processed_slugs=[], files_written=0, chapter_range=None)
         return {"status": 0, "manga_dirs": 0, "chapters_added": 0, "pages_added": 0}
 
     try:
         root = Path(base_path)
         if not root.exists() or not root.is_dir():
             if run_logs_path:
-                _write_indexer_log(run_logs_path, "failed", stats, start_time, error="Storage path not found")
+                _write_indexer_log(run_logs_path, "failed", stats, start_time, error="Storage path not found", processed_slugs=[], files_written=0, chapter_range=None)
             return {"status": 0, "manga_dirs": 0, "chapters_added": 0, "pages_added": 0}
 
         manga_dirs = [p for p in root.iterdir() if p.is_dir()]
         chapters_total = 0
         pages_total = 0
-        
-        # Update stats for "manga" count (directories found)
-        # Note: Indexer logic counts 'chapters_added' and 'pages_added' (newly added).
-        # But 'stats' in log should probably reflect what was processed or added.
-        # I'll stick to what the function returns: added counts.
+        slugs: List[str] = []
         
         for slug_dir in manga_dirs:
+            slugs.append(slug_dir.name)
             c_added, p_added = _scan_manga_slug_dir(slug_dir)
             chapters_total += c_added
             pages_total += p_added
@@ -181,7 +184,7 @@ def index_storage(base_path: str, run_logs_path: str = None, force: bool = False
         stats["pages"] = pages_total
 
         if run_logs_path:
-             _write_indexer_log(run_logs_path, "success", stats, start_time)
+             _write_indexer_log(run_logs_path, "success", stats, start_time, error=None, processed_slugs=slugs, files_written=pages_total, chapter_range=None)
 
         return {
             "status": 1,
@@ -191,6 +194,5 @@ def index_storage(base_path: str, run_logs_path: str = None, force: bool = False
         }
     except Exception as e:
         if run_logs_path:
-            _write_indexer_log(run_logs_path, "failed", stats, start_time, error=str(e))
+            _write_indexer_log(run_logs_path, "failed", stats, start_time, error=str(e), processed_slugs=[], files_written=0, chapter_range=None)
         raise e
-

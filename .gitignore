@@ -29,8 +29,10 @@ Thumbs.db
 venv/
 .venv/
 env/
-ENV/
+ENV
+
 instance/
+
 /storage/
 *.db
 kuromanga.db

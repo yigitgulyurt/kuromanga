@@ -96,6 +96,10 @@
                         <div style="font-size: 12px;" id="run-indexer-stats"></div>
                     </div>
                 </div>
+                <div style="margin-top:16px;">
+                    <div class="stat-label" style="margin-bottom:8px;">Recent Runs</div>
+                    <div id="recent-runs-list" style="font-size: 14px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -204,7 +208,27 @@
                     }
                     
                     updateRunCard('run-scraper', data.last_scraper_run);
-                    updateRunCard('run-indexer', data.last_indexer_run);
+                     updateRunCard('run-indexer', data.last_indexer_run);
+                    
+                    const listEl = document.getElementById('recent-runs-list');
+                    const runs = Array.isArray(data.recent_runs) ? data.recent_runs : [];
+                    listEl.innerHTML = '';
+                    runs.forEach(function(run) {
+                        const status = (run.status || '').toUpperCase();
+                        const comp = run.component || '';
+                        const type = run.type || '';
+                        const name = run.manga_name || '';
+                        const slug = run.manga_slug || '';
+                        const started = run.started_at ? new Date(run.started_at).toLocaleString() : '';
+                        const li = document.createElement('div');
+                        li.style.padding = '6px 0';
+                        const badgeClass = status === 'SUCCESS' ? 'status-ok' : (status === 'RUNNING' ? 'status-warn' : 'status-err');
+                        li.innerHTML = '<span class=\"' + badgeClass + '\"><strong>' + status + '</strong></span> ' +
+                                       '[' + comp + ':' + type + '] ' +
+                                       (name ? name : slug) + ' ' +
+                                       (started ? ('(' + started + ')') : '');
+                        listEl.appendChild(li);
+                    });
                 })
                 .catch(console.error);
         });

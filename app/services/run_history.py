@@ -32,10 +32,6 @@ def get_runs_status(limit: int = 10) -> Dict[str, Any]:
     except OSError:
         pass
 
-    # Sort by mtime descending (newest first) - assuming filename has timestamp is good, but mtime is safer if clock drift?
-    # Filename format: component_timestamp.json
-    # Let's just sort by filename descending, since timestamp is in name.
-    # Or by modification time.
     files.sort(key=lambda x: x.name, reverse=True)
 
     recent_runs = []
@@ -47,7 +43,6 @@ def get_runs_status(limit: int = 10) -> Dict[str, Any]:
         if not data:
             continue
         
-        # Determine component
         comp = data.get("component")
         
         if comp == "scraper" and last_scraper is None:
