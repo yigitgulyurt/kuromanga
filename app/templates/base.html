@@ -18,6 +18,14 @@
         </button>
 
         <div class="nav-content" id="nav-content">
+            <div class="search-bar">
+                <form action="{{ url_for('manga.manga_list') }}" method="GET">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" name="q" placeholder="Manga ara..." value="{{ request.args.get('q', '') }}">
+                    </div>
+                </form>
+            </div>
             <nav class="menu">
                 <a href="{{ url_for('manga.manga_list') }}" class="{{ 'active' if request.endpoint == 'manga.manga_list' }}">Mangalar</a>
                 {% if current_user and current_user.is_admin %}
@@ -157,10 +165,18 @@
 
     // Mobile Menu
     mobileToggle.addEventListener('click', function(e) {
+        e.preventDefault();
         e.stopPropagation();
-        navContent.classList.toggle('active');
-        document.querySelector('.nav').classList.toggle('menu-open');
-        document.body.classList.toggle('no-scroll');
+        const isActive = navContent.classList.contains('active');
+        if (isActive) {
+            navContent.classList.remove('active');
+            document.querySelector('.nav').classList.remove('menu-open');
+            document.body.classList.remove('no-scroll');
+        } else {
+            navContent.classList.add('active');
+            document.querySelector('.nav').classList.add('menu-open');
+            document.body.classList.add('no-scroll');
+        }
     });
 
     document.addEventListener('click', function(e) {

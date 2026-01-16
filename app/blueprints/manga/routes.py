@@ -1,4 +1,5 @@
-from flask import render_template, abort, session
+from flask import render_template, abort, session, request
+from app.models.manga import Manga
 
 from app.blueprints.manga import manga_bp
 from app.services.manga_service import MangaService
@@ -18,17 +19,24 @@ page_repository = PageRepository()
 
 @manga_bp.route("/")
 def manga_list():
-    manga_items = manga_service.list_manga()
+    query = request.args.get('q', '').strip()
+    if query:
+        manga_items = Manga.query.filter(Manga.title.ilike(f'%{query}%')).all()
+    else:
+        manga_items = manga_service.list_manga()
+        
     display = []
     for m in manga_items:
         cover = None
         chs = chapter_service.list_chapters_for_manga(m.id)
         if chs:
+            # Sort chapters to get the first one for the cover
+            chs.sort(key=lambda x: x.number)
             pages = page_repository.get_for_chapter(chs[0].id)
             if pages:
                 cover = pages[0].image_path
         display.append({"manga": m, "cover": cover})
-    return render_template("manga/list.html", display_manga=display)
+    return render_template("manga/list.html", display_manga=display, query=query)
 
 
 @manga_bp.route("/manga/<int:manga_id>/")
