@@ -8,5 +8,5 @@ class ReadingProgress(db.Model):
     user_id = db.Column(db.Integer, nullable=False)
     manga_id = db.Column(db.Integer, nullable=False)
     chapter_id = db.Column(db.Integer, nullable=False)
-    last_page_number = db.Column(db.Integer, nullable=False)
+    last_page_number = db.Column(db.Integer, nullable=True)
 

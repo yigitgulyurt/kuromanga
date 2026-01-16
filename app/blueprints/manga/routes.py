@@ -36,12 +36,10 @@ def chapter_read(manga_id, chapter_id):
     if not chapter or chapter.manga_id != manga.id:
         abort(404)
     user_id = 1
-    progress = reading_progress_service.get_progress(user_id, manga.id, chapter.id)
-    last_page_number = progress.last_page_number if progress else None
+    reading_progress_service.set_last_read_chapter(user_id, manga.id, chapter.id)
     return render_template(
         "manga/read.html",
         manga=manga,
         chapter=chapter,
         pages=pages,
-        last_page_number=last_page_number,
     )

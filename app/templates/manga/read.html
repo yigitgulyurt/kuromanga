@@ -9,13 +9,12 @@
 {% endif %}
 
 {% if last_page_number %}
-    <p>Son okuduğun sayfa: {{ last_page_number }}</p>
+    
 {% endif %}
 
 <div id="reader-root"
      data-manga-id="{{ manga.id }}"
-     data-chapter-id="{{ chapter.id }}"
-     data-last-page-number="{{ last_page_number if last_page_number else '' }}">
+     data-chapter-id="{{ chapter.id }}">
     <div>
         {% for page in pages %}
             <div class="manga-page" data-page-number="{{ page.number }}">
@@ -27,5 +26,5 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/reading_progress.js') }}"></script>
+ 
 {% endblock %}
