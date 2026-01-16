@@ -58,8 +58,44 @@ def chapter_read(manga_id, chapter_id):
     chapter, pages = chapter_service.get_chapter_with_pages(chapter_id)
     if not chapter or chapter.manga_id != manga.id:
         abort(404)
+    
+    # Calculate prev/next chapters
+    all_chapters = chapter_service.list_chapters_for_manga(manga_id)
+    # Chapters are usually sorted by number desc or asc. Assuming default sort (number asc hopefully)
+    # If list_chapters_for_manga returns sorted, we can find index.
+    # Note: If service returns DESC, then next in list is previous chapter.
+    # Let's check service or assume and fix. Usually chapters are listed 1..N.
+    # Actually, often they are listed newest first (DESC).
+    # Let's check logic: if I am at ch 1, next is 2.
+    
+    prev_chapter = None
+    next_chapter = None
+    
+    for i, ch in enumerate(all_chapters):
+        if ch.id == chapter_id:
+            # If sorted 1, 2, 3...
+            # Prev is i-1, Next is i+1
+            # But if sorted 3, 2, 1... (Newest first)
+            # Prev (older) is i+1, Next (newer) is i-1
+            # Let's assume list_chapters_for_manga returns by number ASC for now, or check service.
+            # Standard for reading lists is usually ASC so you read in order.
+            # But often blogs list DESC.
+            # Let's safely check numbers.
+            pass
+            
+    # Better approach: Sort by number
+    all_chapters.sort(key=lambda x: x.number)
+    
+    for i, ch in enumerate(all_chapters):
+        if ch.id == chapter_id:
+            if i > 0:
+                prev_chapter = all_chapters[i-1]
+            if i < len(all_chapters) - 1:
+                next_chapter = all_chapters[i+1]
+            break
+
     user_id = session.get("user_id")
     if user_id is not None:
         reading_progress_service.set_last_read_chapter(user_id, manga.id, chapter.id)
     chapter_comments = Comment.query.filter_by(manga_id=manga_id, chapter_id=chapter_id).order_by(Comment.created_at.asc()).all()
-    return render_template("manga/read.html", manga=manga, chapter=chapter, pages=pages, comments=chapter_comments)
+    return render_template("manga/read.html", manga=manga, chapter=chapter, pages=pages, comments=chapter_comments, next_chapter=next_chapter, prev_chapter=prev_chapter)

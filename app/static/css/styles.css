@@ -7,12 +7,48 @@
 html,body{height:100%}
 body.theme{margin:0;background:linear-gradient(135deg,#1f2937,#111827);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Noto Sans',sans-serif}
 .container{max-width:1100px;margin:0 auto;padding:0 16px}
-.nav{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;height:56px}
-.brand-link{color:#f9fafb;text-decoration:none;font-weight:700;font-size:18px}
-.menu{display:flex;gap:12px}
-.menu a{color:#cbd5e1;text-decoration:none;font-weight:600;font-size:14px;padding:8px;border-radius:8px}
-.menu a:hover{background:rgba(255,255,255,0.06)}
+ .nav{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+ .nav-inner{display:flex;align-items:center;height:56px;position:relative}
+.nav-inner .brand{margin-right:32px}
+.brand-link{color:#f9fafb;text-decoration:none;font-weight:700;font-size:20px;letter-spacing:-0.5px}
+.menu{display:flex;gap:4px}
+.menu a{color:#cbd5e1;text-decoration:none;font-weight:600;font-size:14px;padding:8px 12px;border-radius:8px;transition:all 0.2s}
+.menu a:hover{background:rgba(255,255,255,0.06);color:#fff}
+
+/* Mobile Menu */
+.mobile-toggle{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;padding:4px;margin-left:auto}
+.nav-content{display:flex;align-items:center;gap:16px;flex:1;justify-content:space-between}
+
+@media (max-width: 768px) {
+  .nav-inner{justify-content:space-between}
+  .mobile-toggle{display:block}
+  .nav-content{
+    position:absolute;top:56px;left:0;right:0;
+    flex-direction:column;background:var(--bg);border-bottom:1px solid var(--border);
+    padding:16px;gap:16px;box-shadow:var(--shadow);
+    display:none;
+    z-index:100;
+  }
+  .nav-content.active{display:flex}
+  .menu{flex-direction:column;width:100%;gap:4px}
+  .menu a{width:100%;text-align:center;padding:12px}
+  .actions{flex-direction:column;width:100%;gap:8px;border-top:1px solid var(--border);padding-top:16px}
+  .actions .btn{width:100%;justify-content:center}
+}
+
+/* Reader Controls */
+.reader-toolbar{
+  position:sticky;top:57px;z-index:40;
+  background:var(--bg-soft);border-bottom:1px solid var(--border);
+  padding:8px;display:flex;justify-content:center;gap:8px;
+  box-shadow:var(--shadow);margin-bottom:16px;
+}
+.reader-container{max-width:100%;margin:0 auto;text-align:center}
+.reader-container.zoom-50 .page-img{max-width:50%}
+.reader-container.zoom-75 .page-img{max-width:75%}
+.reader-container.zoom-100 .page-img{max-width:100%}
+.reader-container.fit-width .page-img{width:100%;height:auto}
+.reader-container.fit-height .page-img{height:90vh;width:auto}
 .content{padding:20px 0}
 .inline{display:inline}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
@@ -51,8 +87,17 @@ body.theme{margin:0;background:linear-gradient(135deg,#1f2937,#111827);color:var
 .list li{margin:6px 0}
 .chapter-links{display:flex;flex-wrap:wrap;gap:8px}
 .chapter-links li{margin:0}
-.comment{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--bg);color:var(--text)}
-.comment .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+.comment{border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:var(--bg-soft);transition:transform 0.2s ease}
+.comment:hover{transform:translateY(-2px)}
+.comment-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.comment-user{display:flex;align-items:center;gap:8px}
+.comment-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff}
+.comment-username{font-weight:700;font-size:14px;color:#f1f5f9}
+.comment-meta{font-size:12px;color:var(--muted)}
+.comment-body{font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+.comment-actions{display:flex;gap:8px;margin-top:10px}
+.btn-delete{background:transparent;border:none;color:#ef4444;font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:4px;transition:background 0.2s}
+.btn-delete:hover{background:rgba(239,68,68,0.1)}
 .page-img{width:100%;height:auto;border-radius:8px;border:1px solid var(--border);background:#0f172a}
 /* Buttons - small variant */
 .btn-sm{height:32px;padding:0 12px;font-size:13px;border-radius:9999px}

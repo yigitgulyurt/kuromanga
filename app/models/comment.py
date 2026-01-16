@@ -13,3 +13,7 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=True)
 
+    user = db.relationship("User", backref="comments")
+    manga = db.relationship("Manga", backref="comments")
+    chapter = db.relationship("Chapter", backref="comments")
+

@@ -216,6 +216,47 @@ def filter_by_formats(urls: List[str], allowed_exts: Set[str]) -> List[str]:
     return result
 
 
+def _known_patterns() -> List[Tuple[str, re.Pattern]]:
+    exts = r"(?:jpg|jpeg|png|webp)"
+    return [
+        ("digit", re.compile(rf"/(\d+)\.{exts}$", re.IGNORECASE)),
+        ("zero-padded", re.compile(rf"/(\d{{2,}})\.{exts}$", re.IGNORECASE)),
+        ("digit-dash-digit", re.compile(rf"/(\d+)-(\d+)\.{exts}$", re.IGNORECASE)),
+        ("digit-dash-2digit", re.compile(rf"/(\d+)-(\d{{2}})\.{exts}$", re.IGNORECASE)),
+        ("digit-underscore-digit", re.compile(rf"/(\d+)_\d+\.{exts}$", re.IGNORECASE)),
+    ]
+
+
+def _select_best_pattern(urls: List[str]) -> Tuple[List[str], Optional[str]]:
+    if not urls:
+        return urls, None
+    patterns = _known_patterns()
+    scored: List[Tuple[str, int, List[int], List[str]]] = []
+    for name, pat in patterns:
+        matched_indices: List[int] = []
+        filtered: List[str] = []
+        for idx, u in enumerate(urls):
+            try:
+                m = pat.search(urlparse(u).path)
+            except Exception:
+                m = None
+            if m:
+                matched_indices.append(idx)
+                filtered.append(u)
+        # score = number of matches + small bonus if appears sequential
+        seq_bonus = 0
+        if len(matched_indices) >= 2:
+            diffs = [b - a for a, b in zip(matched_indices, matched_indices[1:])]
+            if all(d == 1 for d in diffs):
+                seq_bonus = 1
+        scored.append((name, len(filtered) + seq_bonus, matched_indices, filtered))
+    scored.sort(key=lambda x: x[1], reverse=True)
+    for name, score, _, filtered in scored:
+        if filtered:
+            return filtered, name
+    return urls, None
+
+
 def increment_chapter_url(base_url: str, next_chapter_number: int) -> str:
     parsed = urlparse(base_url)
     segments = [segment for segment in parsed.path.split("/") if segment]
@@ -272,27 +313,11 @@ def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], lo
     image_urls = filter_by_formats(urls, allowed_exts)
     total = len(image_urls)
     logger.update_stats(manga=1, chapters=1, pages=total)
-    # Detect original source filename pattern for debug
-    def _detect_source_pattern(u: str) -> Optional[str]:
-        try:
-            parsed = urlparse(u)
-            name = os.path.basename(parsed.path).split(".")[0]
-            if re.fullmatch(r"\d+-\d+", name):
-                return "digit-dash-digit"
-            if re.fullmatch(r"\d+_\d+", name):
-                return "digit-underscore-digit"
-            if re.fullmatch(r"\d+", name):
-                return "digit"
-            return None
-        except Exception:
-            return None
-    pattern = None
-    for u in image_urls:
-        p = _detect_source_pattern(u)
-        if p:
-            pattern = p
-            break
-    logger.source_pattern_detected = pattern
+    filtered_urls, pattern_name = _select_best_pattern(image_urls)
+    # Fallback if overly restrictive
+    if filtered_urls and len(filtered_urls) >= max(1, int(0.6 * len(image_urls))):
+        image_urls = filtered_urls
+    logger.source_pattern_detected = pattern_name
     logger._write()
 
     written = 0

@@ -29,7 +29,7 @@
     {% for chapter in chapters %}
       <li>
         <a class="btn btn-outline btn-sm" href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=chapter.id) }}">
-          Bölüm {{ chapter.number }}{% if chapter.title %}: {{ chapter.title }}{% endif %}
+          Bölüm {{ chapter.number }}{% if chapter.title %}{% endif %}
         </a>
       </li>
     {% else %}
@@ -48,13 +48,57 @@
   </div>
   <div class="comment-list mt-10">
     {% for c in comments %}
-      <div class="comment">
-        <div class="meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-        <div class="content">{{ c.content }}</div>
+      <div class="comment" id="comment-{{ c.id }}">
+        <div class="comment-header">
+          <div class="comment-user">
+            <div class="comment-avatar">
+              {{ (c.user.username or 'U')[0].upper() }}
+            </div>
+            <div class="comment-info">
+              <div class="comment-username">{{ c.user.username }}</div>
+              <div class="comment-meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+          </div>
+          {% if current_user and c.user_id == current_user.id %}
+            <div class="comment-header-actions">
+              <button class="btn-delete" onclick="deleteComment({{ c.id }})">Sil</button>
+            </div>
+          {% endif %}
+        </div>
+        <div class="comment-body">{{ c.content }}</div>
       </div>
     {% else %}
       <p>Bu manga için yorum bulunamadı.</p>
     {% endfor %}
   </div>
 </section>
+
+<script>
+function deleteComment(commentId) {
+    if (!confirm('Bu yorumu silmek istediğinize emin misiniz?')) return;
+    
+    fetch(`/comment/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            const el = document.getElementById(`comment-${commentId}`);
+            if (el) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                setTimeout(() => el.remove(), 300);
+            }
+        } else {
+            alert('Yorum silinirken bir hata oluştu.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Bir ağ hatası oluştu.');
+    });
+}
+</script>
 {% endblock %}

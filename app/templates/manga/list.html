@@ -22,9 +22,6 @@
         {% if item.manga.description %}
           <p class="card-desc">{{ item.manga.description }}</p>
         {% endif %}
-        <div class="actions">
-          <a class="btn btn-primary" href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">İncele</a>
-        </div>
       </div>
     </div>
   {% else %}

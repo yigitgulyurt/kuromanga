@@ -12,26 +12,34 @@
         <div class="brand">
             <a href="{{ url_for('manga.manga_list') }}" class="brand-link">Kuromanga</a>
         </div>
-        <nav class="menu">
-            <a href="{{ url_for('manga.manga_list') }}">Mangalar</a>
-            <a href="{{ url_for('status.dashboard') }}">Kontrol Paneli</a>
-            <a href="{{ url_for('user_content.profile') }}">Profilim</a>
-            <a href="{{ url_for('user_content.profile') }}#favorites">Favorilerim</a>
-            <a href="{{ url_for('user_content.profile') }}#to-read">Okunacaklarım</a>
-        </nav>
-        <nav class="actions">
-            {% if is_authenticated and current_user %}
-                <a class="btn btn-secondary" href="{{ url_for('user_content.profile') }}">Profilim ({{ current_user.username }})</a>
-                <form method="POST" action="{{ url_for('auth.logout') }}" class="inline">
-                    <button class="btn btn-outline" type="submit">Çıkış</button>
-                </form>
-            {% else %}
-                <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Kayıt Ol</a>
-                <a class="btn btn-outline" href="{{ url_for('auth.login') }}">Giriş Yap</a>
-            {% endif %}
-        </nav>
+        <button class="mobile-toggle" id="mobile-toggle" aria-label="Menu">☰</button>
+        <div class="nav-content" id="nav-content">
+            <nav class="menu">
+                <a href="{{ url_for('manga.manga_list') }}">Mangalar</a>
+                {% if current_user and current_user.is_admin %}
+                    <a href="{{ url_for('status.dashboard') }}">Kontrol Paneli</a>
+                {% endif %}
+                <a href="{{ url_for('user_content.profile') }}">Profilim</a>
+            </nav>
+            <nav class="actions">
+                {% if is_authenticated and current_user %}
+                    <a class="btn btn-secondary" href="{{ url_for('user_content.profile') }}">Profilim</a>
+                    <form method="POST" action="{{ url_for('auth.logout') }}" class="inline" style="width: 100%;">
+                        <button class="btn btn-outline" type="submit" style="width: 100%;">Çıkış Yap!</button>
+                    </form>
+                {% else %}
+                    <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Kayıt Ol</a>
+                    <a class="btn btn-outline" href="{{ url_for('auth.login') }}">Giriş Yap</a>
+                {% endif %}
+            </nav>
+        </div>
     </div>
 </header>
+<script>
+    document.getElementById('mobile-toggle').addEventListener('click', function() {
+        document.getElementById('nav-content').classList.toggle('active');
+    });
+</script>
 <main class="container content">
     {% block content %}{% endblock %}
 </main>

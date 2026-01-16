@@ -2,6 +2,10 @@
 {% block title %}Sistem Durum Paneli{% endblock %}
 {% block content %}
     <h1>Sistem Durum Paneli</h1>
+    <div class="mt-16">
+        <button id="trigger-index" class="btn btn-secondary">Depolamayı İndeksle</button>
+        <span id="trigger-index-status" class="card-desc" style="margin-left:8px;"></span>
+    </div>
     <div id="loading" class="card-desc mt-16">Sistem durumu yükleniyor...</div>
     <div id="dashboard" style="display:none" class="mt-16">
         <section class="section">
@@ -21,7 +25,7 @@
                 </div>
             </div>
         </section>
-        <section class="section mt-16">
+        <!-- <section class="section mt-16">
             <h2>Disk Kullanımı (Depolama)</h2>
             <div class="stat-grid mt-10">
                 <div class="stat-item">
@@ -37,8 +41,8 @@
                     <div class="stat-label">Free %</div>
                 </div>
             </div>
-        </section>
-        <section class="section mt-16">
+        </section> -->
+        <!-- <section class="section mt-16">
             <h2>Depolama Sağlık Kontrolü</h2>
             <div class="stat-grid mt-10">
                 <div class="stat-item">
@@ -54,7 +58,7 @@
                     <div class="stat-label">Broken Chapters (Empty/Partial)</div>
                 </div>
             </div>
-        </section>
+        </section> -->
         <section class="section mt-16">
             <h2>Çalışma Geçmişi</h2>
             <div class="stat-grid mt-10">
@@ -78,6 +82,22 @@
         </section>
     </div>
     <script>
+        document.getElementById('trigger-index').addEventListener('click', function() {
+            const btn = this;
+            const statusEl = document.getElementById('trigger-index-status');
+            btn.disabled = true;
+            statusEl.textContent = 'İndeksleme çağrılıyor...';
+            fetch('{{ url_for("indexer.index_storage_route") }}', { method: 'GET' })
+                .then(resp => resp.json())
+                .then(data => {
+                    statusEl.textContent = 'Tamamlandı';
+                    btn.disabled = false;
+                })
+                .catch(err => {
+                    statusEl.textContent = 'Hata: ' + err;
+                    btn.disabled = false;
+                });
+        });
         document.addEventListener('DOMContentLoaded', function() {
             // Fetch Status Data
             fetch('/status/data')
@@ -98,48 +118,48 @@
                         document.getElementById('db-pages').textContent = data.db_stats.pages;
                     }
 
-                    // Disk Usage
-                    if (data.disk_usage && !data.disk_usage.error && data.disk_usage.total_gb) {
-                        document.getElementById('disk-free').textContent = data.disk_usage.free_gb + ' GB';
-                        document.getElementById('disk-total').textContent = data.disk_usage.total_gb + ' GB';
-                        const percent = data.disk_usage.percent_free;
-                        const percentEl = document.getElementById('disk-percent');
-                        percentEl.textContent = percent + '%';
-                        if (percent < 10) percentEl.className = 'stat-value status-err';
-                        else if (percent < 20) percentEl.className = 'stat-value status-warn';
-                        else percentEl.className = 'stat-value status-ok';
-                    } else {
-                         document.getElementById('disk-free').textContent = 'N/A';
-                         document.getElementById('disk-total').textContent = 'N/A';
-                         document.getElementById('disk-percent').textContent = 'N/A';
-                    }
+                    // // Disk Usage
+                    // if (data.disk_usage && !data.disk_usage.error && data.disk_usage.total_gb) {
+                    //     document.getElementById('disk-free').textContent = data.disk_usage.free_gb + ' GB';
+                    //     document.getElementById('disk-total').textContent = data.disk_usage.total_gb + ' GB';
+                    //     const percent = data.disk_usage.percent_free;
+                    //     const percentEl = document.getElementById('disk-percent');
+                    //     percentEl.textContent = percent + '%';
+                    //     if (percent < 10) percentEl.className = 'stat-value status-err';
+                    //     else if (percent < 20) percentEl.className = 'stat-value status-warn';
+                    //     else percentEl.className = 'stat-value status-ok';
+                    // } else {
+                    //      document.getElementById('disk-free').textContent = 'N/A';
+                    //      document.getElementById('disk-total').textContent = 'N/A';
+                    //      document.getElementById('disk-percent').textContent = 'N/A';
+                    // }
 
-                    // Health Stats
-                    const health = data.storage_health;
-                    if (health && !health.error) {
-                        const missingDiskCount = Object.keys(health.missing_on_disk || {}).length;
-                        const missingDbCount = Object.keys(health.missing_in_db || {}).length;
-                        const brokenCount = (health.broken_chapters || []).length;
+                    // // Health Stats
+                    // const health = data.storage_health;
+                    // if (health && !health.error) {
+                    //     const missingDiskCount = Object.keys(health.missing_on_disk || {}).length;
+                    //     const missingDbCount = Object.keys(health.missing_in_db || {}).length;
+                    //     const brokenCount = (health.broken_chapters || []).length;
 
-                        const mdEl = document.getElementById('health-missing-disk');
-                        mdEl.textContent = missingDiskCount;
-                        if (missingDiskCount > 0) mdEl.className = 'stat-value status-err';
-                        else mdEl.className = 'stat-value status-ok';
+                    //     const mdEl = document.getElementById('health-missing-disk');
+                    //     mdEl.textContent = missingDiskCount;
+                    //     if (missingDiskCount > 0) mdEl.className = 'stat-value status-err';
+                    //     else mdEl.className = 'stat-value status-ok';
 
-                        const mdbEl = document.getElementById('health-missing-db');
-                        mdbEl.textContent = missingDbCount;
-                        if (missingDbCount > 0) mdbEl.className = 'stat-value status-warn';
-                        else mdbEl.className = 'stat-value status-ok';
+                    //     const mdbEl = document.getElementById('health-missing-db');
+                    //     mdbEl.textContent = missingDbCount;
+                    //     if (missingDbCount > 0) mdbEl.className = 'stat-value status-warn';
+                    //     else mdbEl.className = 'stat-value status-ok';
                         
-                        const brEl = document.getElementById('health-broken');
-                        brEl.textContent = brokenCount;
-                        if (brokenCount > 0) brEl.className = 'stat-value status-err';
-                        else brEl.className = 'stat-value status-ok';
-                    } else {
-                        document.getElementById('health-missing-disk').textContent = 'Error';
-                        document.getElementById('health-missing-db').textContent = 'Error';
-                        document.getElementById('health-broken').textContent = 'Error';
-                    }
+                    //     const brEl = document.getElementById('health-broken');
+                    //     brEl.textContent = brokenCount;
+                    //     if (brokenCount > 0) brEl.className = 'stat-value status-err';
+                    //     else brEl.className = 'stat-value status-ok';
+                    // } else {
+                    //     document.getElementById('health-missing-disk').textContent = 'Error';
+                    //     document.getElementById('health-missing-db').textContent = 'Error';
+                    //     document.getElementById('health-broken').textContent = 'Error';
+                    // }
                 })
                 .catch(err => {
                     document.getElementById('loading').textContent = 'Error loading status: ' + err;

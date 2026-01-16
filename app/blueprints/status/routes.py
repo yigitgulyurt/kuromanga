@@ -1,24 +1,49 @@
-from flask import render_template, jsonify, current_app
+from flask import render_template, jsonify, current_app, session, redirect, url_for, request, abort
 from app.blueprints.status import status_bp
 from app.models.manga import Manga
 from app.models.chapter import Chapter
 from app.models.page import Page
+from app.models.user import User
 from app.services.storage_health import storage_health
 from app.services.run_history import get_runs_status
 import shutil
 import os
 
+def _require_admin():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    user = User.query.get(user_id)
+    if not user or not user.is_admin:
+        return False
+    return True
+
 @status_bp.route("/runs")
 def runs_status():
+    is_admin = _require_admin()
+    if is_admin is None:
+        return jsonify({"error": "login_required"}), 401
+    if is_admin is False:
+        return jsonify({"error": "forbidden"}), 403
     data = get_runs_status()
-    return jsonify(data)
+    return jsonify(data), 200
 
 @status_bp.route("/")
 def dashboard():
+    is_admin = _require_admin()
+    if is_admin is None:
+        return redirect(url_for("auth.login"))
+    if is_admin is False:
+        abort(403)
     return render_template("status/dashboard.html")
 
 @status_bp.route("/data")
 def status_data():
+    is_admin = _require_admin()
+    if is_admin is None:
+        return jsonify({"error": "login_required"}), 401
+    if is_admin is False:
+        return jsonify({"error": "forbidden"}), 403
     # DB Stats
     try:
         manga_count = Manga.query.count()

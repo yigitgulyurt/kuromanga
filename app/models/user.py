@@ -10,6 +10,7 @@ class User(db.Model):
     username = db.Column(db.String(128), nullable=False, unique=True)
     created_at = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     password_hash = db.Column(db.String(256), nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)

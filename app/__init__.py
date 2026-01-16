@@ -23,7 +23,9 @@ def create_app(config_object=None):
                 cols = {r[1] for r in rows}
                 if "password_hash" not in cols:
                     db.session.execute("ALTER TABLE user ADD COLUMN password_hash VARCHAR(256)")
-                    db.session.commit()
+                if "is_admin" not in cols:
+                    db.session.execute("ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0")
+                db.session.commit()
         except Exception:
             pass
 
