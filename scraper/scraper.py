@@ -100,7 +100,7 @@ def extract_image_urls(html: str, base_url: str, required_class: Optional[str], 
 
     if required_class:
         for img in soup.find_all("img", class_=required_class):
-            src = img.get("src")
+            src = (img.get("src") or "").strip()
             if not src:
                 continue
             absolute = urljoin(base_url, src)
@@ -116,7 +116,7 @@ def extract_image_urls(html: str, base_url: str, required_class: Optional[str], 
         for fb in fallback_classes:
             temp: List[str] = []
             for img in soup.find_all("img", class_=fb):
-                src = img.get("src")
+                src = (img.get("src") or "").strip()
                 if not src:
                     continue
                 absolute = urljoin(base_url, src)
@@ -132,8 +132,8 @@ def extract_image_urls(html: str, base_url: str, required_class: Optional[str], 
                 break
     if not candidates:
         temp2: List[str] = []
-        for img in soup.find_all("img"):
-            src = img.get("src")
+        for img in soup.select("div.reading-content img"):
+            src = (img.get("src") or "").strip()
             if not src:
                 continue
             absolute = urljoin(base_url, src)
@@ -142,27 +142,29 @@ def extract_image_urls(html: str, base_url: str, required_class: Optional[str], 
             lower = absolute.lower()
             if not (lower.endswith(".jpg") or lower.endswith(".jpeg") or lower.endswith(".png") or lower.endswith(".webp")):
                 continue
-            if not re.search(r"chapter", lower):
-                continue
             temp2.append(absolute)
         if temp2:
             candidates = temp2
-            used_class = "img[src*='chapter']"
+            used_class = "div.reading-content img"
 
-    seen = set()
-    unique_urls: List[str] = []
-    for url in candidates:
-        if url in seen:
-            continue
-        seen.add(url)
-        unique_urls.append(url)
-
-    return unique_urls, used_class
+    return candidates, used_class
 
 
 def build_output_directory(manga_slug: str, chapter_number: str) -> str:
     return os.path.join(config.BASE_STORAGE_PATH, manga_slug, chapter_number)
 
+def _extract_chapter_dir_name(html: str, default_fallback: str) -> str:
+    soup = BeautifulSoup(html, "html.parser")
+    inp = soup.find("input", id="wp-manga-current-chap")
+    value = None
+    if inp:
+        try:
+            value = (inp.get("value") or "").strip()
+        except Exception:
+            value = None
+    base = value or default_fallback
+    safe = re.sub(r"[^a-zA-Z0-9._-]+", "-", base).strip("-").lower()
+    return safe or default_fallback
 
 def is_chapter_complete(manga_slug: str, chapter_number: str) -> bool:
     chapter_dir = build_output_directory(manga_slug, chapter_number)
@@ -263,12 +265,36 @@ def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], lo
     logger._write()
 
     chapter_number = derive_chapter_number(chapter_url)
-    output_dir = build_output_directory(manga_slug, chapter_number)
+    chapter_dir_name = _extract_chapter_dir_name(html, chapter_number)
+    output_dir = build_output_directory(manga_slug, chapter_dir_name)
     os.makedirs(output_dir, exist_ok=True)
 
     image_urls = filter_by_formats(urls, allowed_exts)
     total = len(image_urls)
     logger.update_stats(manga=1, chapters=1, pages=total)
+    # Detect original source filename pattern for debug
+    def _detect_source_pattern(u: str) -> Optional[str]:
+        try:
+            parsed = urlparse(u)
+            name = os.path.basename(parsed.path).split(".")[0]
+            if re.fullmatch(r"\d+-\d+", name):
+                return "digit-dash-digit"
+            if re.fullmatch(r"\d+_\d+", name):
+                return "digit-underscore-digit"
+            if re.fullmatch(r"\d+", name):
+                return "digit"
+            return None
+        except Exception:
+            return None
+    pattern = None
+    for u in image_urls:
+        p = _detect_source_pattern(u)
+        if p:
+            pattern = p
+            break
+    logger.source_pattern_detected = pattern
+    logger._write()
+
     written = 0
     for index, image_url in enumerate(image_urls, start=1):
         final_name = determine_padded_filename(index, total, image_url)
@@ -339,7 +365,13 @@ def main() -> None:
                 except Exception:
                     chapter_int = None
 
-                if args.resume and is_chapter_complete(manga_slug, chapter_number):
+                dir_name_for_resume = chapter_number
+                try:
+                    html_pre = fetch_html(target_url)
+                    dir_name_for_resume = _extract_chapter_dir_name(html_pre, chapter_number)
+                except Exception:
+                    pass
+                if args.resume and is_chapter_complete(manga_slug, dir_name_for_resume):
                     if chapter_int is not None:
                         logger.skipped_chapters.append(chapter_int)
                         logger.last_completed_chapter = chapter_int
@@ -366,12 +398,18 @@ def main() -> None:
             except Exception:
                 chapter_int = None
 
-            if args.resume and is_chapter_complete(manga_slug, chapter_number):
+            dir_name_for_resume = chapter_number
+            try:
+                html_pre = fetch_html(chapter_url)
+                dir_name_for_resume = _extract_chapter_dir_name(html_pre, chapter_number)
+            except Exception:
+                pass
+            if args.resume and is_chapter_complete(manga_slug, dir_name_for_resume):
                 if chapter_int is not None:
                     logger.skipped_chapters.append(chapter_int)
                     logger.last_completed_chapter = chapter_int
                     logger._write()
-                output_dir = build_output_directory(manga_slug, chapter_number)
+                output_dir = build_output_directory(manga_slug, dir_name_for_resume)
                 logger.finish("success")
             else:
                 output_dir, wrote = scrape_chapter(chapter_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None), fallback_classes=fallback_classes)

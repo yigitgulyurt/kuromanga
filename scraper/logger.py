@@ -43,6 +43,7 @@ class RunLogger:
         self.status: str = "running"
         self.stats = {"manga": 0, "chapters": 0, "pages": 0}
         self.fallback_class_used: Optional[str] = None
+        self.source_pattern_detected: Optional[str] = None
         self._write()
 
     def _to_dict(self) -> Dict[str, Any]:
@@ -69,6 +70,7 @@ class RunLogger:
             "interrupted_at": self.interrupted_at,
             "last_completed_chapter": self.last_completed_chapter,
             "fallback_class_used": self.fallback_class_used,
+            "source_pattern_detected": self.source_pattern_detected,
         }
 
     def _write(self):

@@ -12,6 +12,18 @@
 {% if last_read_chapter %}
 <p>Son okuduğunuz chapter: <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=last_read_chapter.id) }}">Chapter {{ last_read_chapter.number }}</a></p>
 {% endif %}
+<div class="actions">
+  <form method="POST" action="{{ url_for('user_content.toggle_favorite', manga_id=manga.id) }}" class="inline">
+    <button class="btn {{ 'on' if is_favorite else 'off' }}" type="submit">
+      {{ 'Favorilerden Çıkar' if is_favorite else 'Favorilere Ekle' }}
+    </button>
+  </form>
+  <form method="POST" action="{{ url_for('user_content.toggle_to_read', manga_id=manga.id) }}" class="inline">
+    <button class="btn {{ 'on' if is_to_read else 'off' }}" type="submit">
+      {{ 'Okunacaklardan Çıkar' if is_to_read else 'Okunacaklara Ekle' }}
+    </button>
+  </form>
+</div>
 <ul>
     {% for chapter in chapters %}
         <li>
@@ -23,4 +35,34 @@
         <li>Bu manga için henüz chapter yok.</li>
     {% endfor %}
 </ul>
+<div class="comments">
+  <h3>Yorumlar</h3>
+  <div class="comment-form">
+    <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}">
+      <textarea name="content" placeholder="Yorum yaz..." required></textarea>
+      <button type="submit" class="btn off">Yorum Gönder</button>
+    </form>
+  </div>
+  <div class="comment-list">
+    {% for c in comments %}
+      <div class="comment">
+        <div class="meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+        <div class="content">{{ c.content }}</div>
+      </div>
+    {% else %}
+      <p>Bu manga için yorum bulunamadı.</p>
+    {% endfor %}
+  </div>
+</div>
+<style>
+.actions{display:flex;gap:8px;margin:10px 0 16px 0}
+.inline{display:inline}
+.btn{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+.btn.off{background:#1f2937;color:#e5e7eb;border:1px solid rgba(255,255,255,0.12)}
+.btn.on{background:#7c3aed;color:#fff}
+.comments{margin-top:18px}
+.comment-form textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);padding:8px}
+.comment{border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:8px;background:#0b1220;color:#e5e7eb}
+.comment .meta{font-size:12px;color:#94a3b8;margin-bottom:6px}
+</style>
 {% endblock %}

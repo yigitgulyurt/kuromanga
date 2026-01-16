@@ -26,5 +26,33 @@
     </div>
 </div>
 
+<div class="comments">
+  <h3>Yorumlar</h3>
+  <div class="comment-form">
+    <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}">
+      <input type="hidden" name="chapter_id" value="{{ chapter.id }}">
+      <textarea name="content" placeholder="Yorum yaz..." required></textarea>
+      <button type="submit" class="btn off">Yorum Gönder</button>
+    </form>
+  </div>
+  <div class="comment-list">
+    {% for c in comments %}
+      <div class="comment">
+        <div class="meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+        <div class="content">{{ c.content }}</div>
+      </div>
+    {% else %}
+      <p>Bu chapter için yorum bulunamadı.</p>
+    {% endfor %}
+  </div>
+</div>
+<style>
+.btn{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-weight:600}
+.btn.off{background:#1f2937;color:#e5e7eb;border:1px solid rgba(255,255,255,0.12)}
+.comments{margin-top:18px}
+.comment-form textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);padding:8px}
+.comment{border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:8px;background:#0b1220;color:#e5e7eb}
+.comment .meta{font-size:12px;color:#94a3b8;margin-bottom:6px}
+</style>
  
 {% endblock %}
