@@ -1,109 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Status Dashboard</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; color: #333; }
-        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .stat-item { text-align: center; padding: 10px; background: #f9f9f9; border-radius: 4px; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #333; }
-        .stat-label { color: #666; font-size: 14px; margin-top: 5px; }
-        .status-ok { color: green; }
-        .status-warn { color: orange; }
-        .status-err { color: red; }
-        #loading { text-align: center; font-style: italic; color: #666; margin-top: 50px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>System Status Dashboard</h1>
-        
-        <div id="loading">Loading system status...</div>
-
-        <div id="dashboard" style="display:none;">
-            <div class="card">
-                <h2>Database Statistics</h2>
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="db-mangas">-</div>
-                        <div class="stat-label">Mangas</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="db-chapters">-</div>
-                        <div class="stat-label">Chapters</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="db-pages">-</div>
-                        <div class="stat-label">Pages</div>
-                    </div>
+{% extends "base.html" %}
+{% block title %}Sistem Durum Paneli{% endblock %}
+{% block content %}
+    <h1>Sistem Durum Paneli</h1>
+    <div id="loading" class="card-desc mt-16">Sistem durumu yükleniyor...</div>
+    <div id="dashboard" style="display:none" class="mt-16">
+        <section class="section">
+            <h2>Veritabanı İstatistikleri</h2>
+            <div class="stat-grid mt-10">
+                <div class="stat-item">
+                    <div class="stat-value" id="db-mangas">-</div>
+                    <div class="stat-label">Mangas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="db-chapters">-</div>
+                    <div class="stat-label">Chapters</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="db-pages">-</div>
+                    <div class="stat-label">Pages</div>
                 </div>
             </div>
-
-            <div class="card">
-                <h2>Disk Usage (Storage)</h2>
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="disk-free">-</div>
-                        <div class="stat-label">Free Space</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="disk-total">-</div>
-                        <div class="stat-label">Total Space</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="disk-percent">-</div>
-                        <div class="stat-label">Free %</div>
-                    </div>
+        </section>
+        <section class="section mt-16">
+            <h2>Disk Kullanımı (Depolama)</h2>
+            <div class="stat-grid mt-10">
+                <div class="stat-item">
+                    <div class="stat-value" id="disk-free">-</div>
+                    <div class="stat-label">Free Space</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="disk-total">-</div>
+                    <div class="stat-label">Total Space</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="disk-percent">-</div>
+                    <div class="stat-label">Free %</div>
                 </div>
             </div>
-
-            <div class="card">
-                <h2>Storage Health Check</h2>
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="health-missing-disk">-</div>
-                        <div class="stat-label">Missing on Disk (In DB but not Disk)</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="health-missing-db">-</div>
-                        <div class="stat-label">Missing in DB (On Disk but not DB)</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="health-broken">-</div>
-                        <div class="stat-label">Broken Chapters (Empty/Partial)</div>
-                    </div>
+        </section>
+        <section class="section mt-16">
+            <h2>Depolama Sağlık Kontrolü</h2>
+            <div class="stat-grid mt-10">
+                <div class="stat-item">
+                    <div class="stat-value" id="health-missing-disk">-</div>
+                    <div class="stat-label">Missing on Disk (In DB but not Disk)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="health-missing-db">-</div>
+                    <div class="stat-label">Missing in DB (On Disk but not DB)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="health-broken">-</div>
+                    <div class="stat-label">Broken Chapters (Empty/Partial)</div>
                 </div>
             </div>
-
-            <div class="card">
-                <h2>Run History</h2>
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="run-scraper-status">-</div>
-                        <div class="stat-label">Last Scraper Run</div>
-                        <div style="font-size: 12px; color: #888;" id="run-scraper-time"></div>
-                        <div style="font-size: 12px;" id="run-scraper-stats"></div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="run-indexer-status">-</div>
-                        <div class="stat-label">Last Indexer Run</div>
-                        <div style="font-size: 12px; color: #888;" id="run-indexer-time"></div>
-                        <div style="font-size: 12px;" id="run-indexer-stats"></div>
-                    </div>
+        </section>
+        <section class="section mt-16">
+            <h2>Çalışma Geçmişi</h2>
+            <div class="stat-grid mt-10">
+                <div class="stat-item">
+                    <div class="stat-value" id="run-scraper-status">-</div>
+                    <div class="stat-label">Last Scraper Run</div>
+                    <div class="stat-label" id="run-scraper-time"></div>
+                    <div class="card-desc" id="run-scraper-stats"></div>
                 </div>
-                <div style="margin-top:16px;">
-                    <div class="stat-label" style="margin-bottom:8px;">Recent Runs</div>
-                    <div id="recent-runs-list" style="font-size: 14px;"></div>
+                <div class="stat-item">
+                    <div class="stat-value" id="run-indexer-status">-</div>
+                    <div class="stat-label">Last Indexer Run</div>
+                    <div class="stat-label" id="run-indexer-time"></div>
+                    <div class="card-desc" id="run-indexer-stats"></div>
                 </div>
             </div>
-        </div>
+            <div class="mt-16">
+                <div class="stat-label">Son Çalışmalar</div>
+                <div id="recent-runs-list" class="mt-10"></div>
+            </div>
+        </section>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Fetch Status Data
@@ -221,7 +194,7 @@
                         const slug = run.manga_slug || '';
                         const started = run.started_at ? new Date(run.started_at).toLocaleString() : '';
                         const li = document.createElement('div');
-                        li.style.padding = '6px 0';
+                        li.className = 'card-desc';
                         const badgeClass = status === 'SUCCESS' ? 'status-ok' : (status === 'RUNNING' ? 'status-warn' : 'status-err');
                         li.innerHTML = '<span class=\"' + badgeClass + '\"><strong>' + status + '</strong></span> ' +
                                        '[' + comp + ':' + type + '] ' +
@@ -233,5 +206,4 @@
                 .catch(console.error);
         });
     </script>
-</body>
-</html>
+{% endblock %}

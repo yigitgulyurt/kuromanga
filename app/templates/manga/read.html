@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}{{ manga.title }} - Chapter {{ chapter.number }}{% endblock %}
+{% block title %}{{ manga.title }} - Bölüm {{ chapter.number }}{% endblock %}
 
 {% block content %}
-<h2>{{ manga.title }} - Chapter {{ chapter.number }}</h2>
+<section class="section">
+<h2>{{ manga.title }} - Bölüm {{ chapter.number }}</h2>
 {% if chapter.title %}
     <h3>{{ chapter.title }}</h3>
 {% endif %}
@@ -12,30 +13,31 @@
     
 {% endif %}
 
-<div id="reader-root"
+<div id="reader-root" class="mt-16"
      data-manga-id="{{ manga.id }}"
      data-chapter-id="{{ chapter.id }}">
     <div>
         {% for page in pages %}
             <div class="manga-page" data-page-number="{{ page.number }}">
-                <img src="{{ page.image_path }}" alt="Page {{ page.number }}">
+                <img class="page-img" src="{{ page.image_path }}" alt="Page {{ page.number }}">
             </div>
         {% else %}
-            <p>Bu chapter için sayfa bulunamadı.</p>
+            <p>Bu bölüm için sayfa bulunamadı.</p>
         {% endfor %}
     </div>
 </div>
+</section>
 
-<div class="comments">
+<section class="section mt-16">
   <h3>Yorumlar</h3>
   <div class="comment-form">
-    <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}">
+    <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}" class="form">
       <input type="hidden" name="chapter_id" value="{{ chapter.id }}">
       <textarea name="content" placeholder="Yorum yaz..." required></textarea>
-      <button type="submit" class="btn off">Yorum Gönder</button>
+      <button type="submit" class="btn btn-outline">Yorum Gönder</button>
     </form>
   </div>
-  <div class="comment-list">
+  <div class="comment-list mt-10">
     {% for c in comments %}
       <div class="comment">
         <div class="meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
@@ -45,14 +47,6 @@
       <p>Bu chapter için yorum bulunamadı.</p>
     {% endfor %}
   </div>
-</div>
-<style>
-.btn{padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-weight:600}
-.btn.off{background:#1f2937;color:#e5e7eb;border:1px solid rgba(255,255,255,0.12)}
-.comments{margin-top:18px}
-.comment-form textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid rgba(0,0,0,0.1);padding:8px}
-.comment{border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;margin-bottom:8px;background:#0b1220;color:#e5e7eb}
-.comment .meta{font-size:12px;color:#94a3b8;margin-bottom:6px}
-</style>
+</section>
  
 {% endblock %}

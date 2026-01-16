@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import session
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -41,5 +42,17 @@ def create_app(config_object=None):
     app.register_blueprint(status_bp)
     app.register_blueprint(storage_bp)
     app.register_blueprint(auth_bp)
+
+    @app.context_processor
+    def inject_current_user():
+        try:
+            from app.models.user import User
+            uid = session.get("user_id")
+            user = None
+            if uid:
+                user = User.query.get(uid)
+            return {"current_user": user, "is_authenticated": bool(user)}
+        except Exception:
+            return {"current_user": None, "is_authenticated": False}
 
     return app

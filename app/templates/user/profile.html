@@ -1,31 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Profil{% endblock %}
 {% block content %}
-<h2>Profil</h2>
-<div class="grid">
-  <div>
+<section class="section">
+  <h2>Profil</h2>
+  <div class="grid-2 mt-16">
+  <div id="favorites">
     <h3>Favoriler</h3>
     <ul>
       {% for m in favorites %}
-        <li><a href="{{ url_for('manga.manga_detail', manga_id=m.id) }}">{{ m.title }}</a></li>
+        <li><a class="btn btn-outline btn-sm" href="{{ url_for('manga.manga_detail', manga_id=m.id) }}">{{ m.title }}</a></li>
       {% else %}
         <li>Favori yok.</li>
       {% endfor %}
     </ul>
   </div>
-  <div>
+  <div id="to-read">
     <h3>Okunacaklar</h3>
     <ul>
       {% for m in to_read %}
-        <li><a href="{{ url_for('manga.manga_detail', manga_id=m.id) }}">{{ m.title }}</a></li>
+        <li><a class="btn btn-outline btn-sm" href="{{ url_for('manga.manga_detail', manga_id=m.id) }}">{{ m.title }}</a></li>
       {% else %}
         <li>Okunacak yok.</li>
       {% endfor %}
     </ul>
   </div>
 </div>
-<style>
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media (max-width:600px){.grid{grid-template-columns:1fr}}
-</style>
+</section>
 {% endblock %}

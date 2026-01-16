@@ -1,19 +1,33 @@
 {% extends "base.html" %}
-
 {% block title %}Manga List{% endblock %}
-
 {% block content %}
 <h2>Manga Listesi</h2>
-<ul>
-    {% for manga in manga_items %}
-        <li>
-            <a href="{{ url_for('manga.manga_detail', manga_id=manga.id) }}">
-                {{ manga.title }}
-            </a>
-        </li>
-    {% else %}
-        <li>Hiç manga bulunamadı.</li>
-    {% endfor %}
-</ul>
+<div class="grid">
+  {% for item in display_manga %}
+    <div class="card">
+      <div class="cover-wrap">
+        <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">
+          {% if item.cover %}
+            <img class="card-cover" src="{{ item.cover }}" alt="{{ item.manga.title }}">
+          {% else %}
+            <div class="card-cover"></div>
+          {% endif %}
+        </a>
+        <div class="cover-overlay">
+          <a class="btn btn-primary" href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">Görüntüle</a>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">{{ item.manga.title }}</h3>
+        {% if item.manga.description %}
+          <p class="card-desc">{{ item.manga.description }}</p>
+        {% endif %}
+        <div class="actions">
+          <a class="btn btn-primary" href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">İncele</a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <p>Hiç manga bulunamadı.</p>
+  {% endfor %}
 {% endblock %}
-

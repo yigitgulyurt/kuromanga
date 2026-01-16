@@ -7,17 +7,28 @@ from app.services.reading_progress_service import ReadingProgressService
 from app.models.comment import Comment
 from app.models.favorite import Favorite
 from app.models.to_read import ToRead
+from app.repositories.page_repository import PageRepository
 
 
 manga_service = MangaService()
 chapter_service = ChapterService()
 reading_progress_service = ReadingProgressService()
+page_repository = PageRepository()
 
 
 @manga_bp.route("/")
 def manga_list():
     manga_items = manga_service.list_manga()
-    return render_template("manga/list.html", manga_items=manga_items)
+    display = []
+    for m in manga_items:
+        cover = None
+        chs = chapter_service.list_chapters_for_manga(m.id)
+        if chs:
+            pages = page_repository.get_for_chapter(chs[0].id)
+            if pages:
+                cover = pages[0].image_path
+        display.append({"manga": m, "cover": cover})
+    return render_template("manga/list.html", display_manga=display)
 
 
 @manga_bp.route("/manga/<int:manga_id>/")
