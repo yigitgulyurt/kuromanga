@@ -13,6 +13,16 @@ class MangaService:
     def get_manga(self, manga_id):
         return self.manga_repository.get_by_id(manga_id)
 
+    def get_manga_by_slug(self, slug):
+        return self.manga_repository.get_by_slug(slug)
+
+    def get_manga_with_chapters_by_slug(self, slug):
+        manga = self.manga_repository.get_by_slug(slug)
+        if not manga:
+            return None, []
+        chapters = self.chapter_repository.get_for_manga(manga.id)
+        return manga, chapters
+
     def get_manga_with_chapters(self, manga_id):
         manga = self.manga_repository.get_by_id(manga_id)
         if not manga:

@@ -23,7 +23,7 @@
 <div class="manga-grid">
   {% for item in display_manga %}
     <article class="manga-card">
-      <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}" class="manga-cover-wrap">
+      <a href="{{ url_for('manga.manga_detail', slug=item.manga.slug) }}" class="manga-cover-wrap">
         {% if item.cover %}
           <img class="manga-cover" src="{{ item.cover }}" alt="{{ item.manga.title }}" loading="lazy">
         {% else %}
@@ -37,7 +37,7 @@
       </a>
       <div class="manga-info">
         <h3 class="manga-title">
-          <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">{{ item.manga.title }}</a>
+          <a href="{{ url_for('manga.manga_detail', slug=item.manga.slug) }}">{{ item.manga.title }}</a>
         </h3>
         {% if item.manga.description %}
           <p class="card-desc" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px;">

@@ -41,8 +41,11 @@ def _ensure_manga(slug: str) -> Manga:
     title = _humanize_title_from_slug(slug)
     existing = Manga.query.filter_by(title=title).first()
     if existing:
+        if not existing.slug:
+            existing.slug = Manga.slugify(title)
+            db.session.commit()
         return existing
-    m = Manga(title=title, description=None)
+    m = Manga(title=title, slug=Manga.slugify(title), description=None)
     db.session.add(m)
     db.session.commit()
     return m
@@ -113,10 +116,13 @@ def _synch_manga(slug: str, chapters_map: Dict[int, Tuple[str, List[Path]]], sta
     title = _humanize_title_from_slug(slug)
     manga = Manga.query.filter_by(title=title).first()
     if manga is None:
-        manga = Manga(title=title, description=None)
+        manga = Manga(title=title, slug=Manga.slugify(title), description=None)
         db.session.add(manga)
         db.session.commit()
         stats["added_manga"] += 1
+    elif not manga.slug:
+        manga.slug = Manga.slugify(title)
+        db.session.commit()
     fs_chapter_numbers = set(chapters_map.keys())
     db_chapters = Chapter.query.filter_by(manga_id=manga.id).all()
     for ch in db_chapters:

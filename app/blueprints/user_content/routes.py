@@ -36,7 +36,8 @@ def add_comment(manga_id):
     if not content:
         if request.is_json:
             return jsonify({"error": "content_required"}), 400
-        return redirect(url_for("manga.manga_detail", manga_id=manga_id))
+        manga = Manga.query.get(manga_id)
+        return redirect(url_for("manga.manga_detail", slug=manga.slug if manga else ''))
     manga = Manga.query.get(manga_id)
     if not manga:
         if request.is_json:
@@ -53,9 +54,9 @@ def add_comment(manga_id):
     db.session.commit()
     if request.is_json:
         return jsonify({"status": "ok", "comment_id": c.id}), 201
-    target = url_for("manga.manga_detail", manga_id=manga_id)
+    target = url_for("manga.manga_detail", slug=manga.slug)
     if ch_obj:
-        target = url_for("manga.chapter_read", manga_id=manga_id, chapter_id=ch_obj.id)
+        target = url_for("manga.chapter_read", slug=manga.slug, chapter_id=ch_obj.id)
     return redirect(target)
 
 
@@ -117,7 +118,8 @@ def toggle_favorite(manga_id):
         result = {"status": "added"}
     if request.is_json:
         return jsonify(result), 200
-    return redirect(url_for("manga.manga_detail", manga_id=manga_id))
+    manga = Manga.query.get(manga_id)
+    return redirect(url_for("manga.manga_detail", slug=manga.slug if manga else ''))
 
 
 @user_content_bp.route("/manga/<int:manga_id>/to-read", methods=["POST"])
@@ -139,7 +141,8 @@ def toggle_to_read(manga_id):
         result = {"status": "added"}
     if request.is_json:
         return jsonify(result), 200
-    return redirect(url_for("manga.manga_detail", manga_id=manga_id))
+    manga = Manga.query.get(manga_id)
+    return redirect(url_for("manga.manga_detail", slug=manga.slug if manga else ''))
 
 
 @user_content_bp.route("/profile", methods=["GET"])

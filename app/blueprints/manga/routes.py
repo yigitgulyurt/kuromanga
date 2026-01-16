@@ -39,28 +39,28 @@ def manga_list():
     return render_template("manga/list.html", display_manga=display, query=query)
 
 
-@manga_bp.route("/manga/<int:manga_id>/")
-def manga_detail(manga_id):
-    manga, chapters = manga_service.get_manga_with_chapters(manga_id)
+@manga_bp.route("/<string:slug>/")
+def manga_detail(slug):
+    manga, chapters = manga_service.get_manga_with_chapters_by_slug(slug)
     if not manga:
         abort(404)
     last_read_chapter = None
     user_id = session.get("user_id")
-    comments = Comment.query.filter_by(manga_id=manga_id, chapter_id=None).order_by(Comment.created_at.asc()).all()
+    comments = Comment.query.filter_by(manga_id=manga.id, chapter_id=None).order_by(Comment.created_at.asc()).all()
     is_favorite = False
     is_to_read = False
     if user_id is not None:
         progress = reading_progress_service.get_last_read_chapter(user_id, manga.id)
         if progress:
             last_read_chapter = ChapterService().chapter_repository.get_by_id(progress.chapter_id)
-        is_favorite = Favorite.query.filter_by(user_id=user_id, manga_id=manga_id).first() is not None
-        is_to_read = ToRead.query.filter_by(user_id=user_id, manga_id=manga_id).first() is not None
+        is_favorite = Favorite.query.filter_by(user_id=user_id, manga_id=manga.id).first() is not None
+        is_to_read = ToRead.query.filter_by(user_id=user_id, manga_id=manga.id).first() is not None
     return render_template("manga/detail.html", manga=manga, chapters=chapters, last_read_chapter=last_read_chapter, comments=comments, is_favorite=is_favorite, is_to_read=is_to_read)
 
-
-@manga_bp.route("/manga/<int:manga_id>/chapters/<int:chapter_id>/read/")
-def chapter_read(manga_id, chapter_id):
-    manga = manga_service.get_manga(manga_id)
+# url adlandırma için
+@manga_bp.route("/<string:slug>/bolum-<int:chapter_id>/")
+def chapter_read(slug, chapter_id):
+    manga = manga_service.get_manga_by_slug(slug)
     if not manga:
         abort(404)
     chapter, pages = chapter_service.get_chapter_with_pages(chapter_id)
@@ -68,7 +68,7 @@ def chapter_read(manga_id, chapter_id):
         abort(404)
     
     # Calculate prev/next chapters
-    all_chapters = chapter_service.list_chapters_for_manga(manga_id)
+    all_chapters = chapter_service.list_chapters_for_manga(manga.id)
     # Chapters are usually sorted by number desc or asc. Assuming default sort (number asc hopefully)
     # If list_chapters_for_manga returns sorted, we can find index.
     # Note: If service returns DESC, then next in list is previous chapter.
@@ -105,5 +105,5 @@ def chapter_read(manga_id, chapter_id):
     user_id = session.get("user_id")
     if user_id is not None:
         reading_progress_service.set_last_read_chapter(user_id, manga.id, chapter.id)
-    chapter_comments = Comment.query.filter_by(manga_id=manga_id, chapter_id=chapter_id).order_by(Comment.created_at.asc()).all()
+    chapter_comments = Comment.query.filter_by(manga_id=manga.id, chapter_id=chapter_id).order_by(Comment.created_at.asc()).all()
     return render_template("manga/read.html", manga=manga, chapter=chapter, pages=pages, comments=chapter_comments, next_chapter=next_chapter, prev_chapter=prev_chapter)

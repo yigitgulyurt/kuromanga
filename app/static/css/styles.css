@@ -224,17 +224,6 @@ h4 { font-size: 1.25rem; }
 
 @media (max-width: 768px) {
   .mobile-toggle { display: block; }
-
-  .nav.menu-open {
-    height: var(--header-height);
-    position: fixed;
-    z-index: 10000;
-  }
-
-  .nav.menu-open .container,
-  .nav.menu-open .nav-inner {
-    overflow: visible !important;
-  }
   
   .nav-content {
     position: fixed;
@@ -242,15 +231,18 @@ h4 { font-size: 1.25rem; }
     left: 0;
     right: 0;
     bottom: 0;
-    background: #090e1a;
-    display: none;
+    background: #090e1a !important;
     flex-direction: column;
-    padding: 20px;
-    gap: 24px;
+    padding: 40px 20px;
+    gap: 32px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
     justify-content: flex-start;
-    z-index: 10001;
+    z-index: 10001 !important;
     border-top: 1px solid var(--border);
-    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   }
 
   .search-bar {
@@ -260,8 +252,14 @@ h4 { font-size: 1.25rem; }
   }
 
   .nav-content.active {
-    display: flex !important;
+    display: flex;
+    animation: slideIn 0.3s ease forwards;
   }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
   
   .menu {
     flex-direction: column;

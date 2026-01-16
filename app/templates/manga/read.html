@@ -15,10 +15,10 @@
       <h2 style="font-size: 1.1rem; margin: 0; white-space: nowrap; display: none; @media(min-width: 600px){display: block;}">Bölüm {{ chapter.number }}</h2>
       <div class="flex gap-4">
         {% if prev_chapter %}
-          <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=prev_chapter.id) }}" class="btn btn-secondary btn-sm" id="prev-btn">←</a>
+          <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=prev_chapter.id) }}" class="btn btn-secondary btn-sm" id="prev-btn">←</a>
         {% endif %}
         {% if next_chapter %}
-          <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=next_chapter.id) }}" class="btn btn-primary btn-sm" id="next-btn">Sonraki →</a>
+          <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=next_chapter.id) }}" class="btn btn-primary btn-sm" id="next-btn">Sonraki →</a>
         {% endif %}
       </div>
     </div>
@@ -40,10 +40,10 @@
 <div class="container mt-16 mb-16">
   <div class="flex justify-center gap-4">
     {% if prev_chapter %}
-      <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=prev_chapter.id) }}" class="btn btn-secondary">← Önceki Bölüm</a>
+      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=prev_chapter.id) }}" class="btn btn-secondary">← Önceki Bölüm</a>
     {% endif %}
     {% if next_chapter %}
-      <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=next_chapter.id) }}" class="btn btn-primary">Sonraki Bölüm →</a>
+      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=next_chapter.id) }}" class="btn btn-primary">Sonraki Bölüm →</a>
     {% endif %}
   </div>
 </div>

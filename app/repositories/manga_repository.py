@@ -8,3 +8,6 @@ class MangaRepository:
     def get_by_id(self, manga_id):
         return Manga.query.get(manga_id)
 
+    def get_by_slug(self, slug):
+        return Manga.query.filter_by(slug=slug).first()
+

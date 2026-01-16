@@ -32,7 +32,7 @@
             </div>
             <div class="manga-grid">
                 {% for item in favorites %}
-                    <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}" class="manga-card">
+                    <a href="{{ url_for('manga.manga_detail', slug=item.manga.slug) }}" class="manga-card">
                         <div class="manga-cover-wrap">
                             {% if item.cover %}
                                 <img src="{{ item.cover }}" alt="{{ item.manga.title }}" loading="lazy" class="manga-cover">
@@ -52,7 +52,7 @@
                 {% else %}
                     <div class="empty-state">
                         <p>Henüz favori manganız yok.</p>
-                        <a href="{{ url_for('manga.index') }}" class="btn btn-primary btn-sm">Manga Keşfet</a>
+                        <a href="{{ url_for('manga.manga_list') }}" class="btn btn-primary btn-sm">Manga Keşfet</a>
                     </div>
                 {% endfor %}
             </div>
@@ -65,7 +65,7 @@
             </div>
             <div class="manga-grid">
                 {% for item in to_read %}
-                    <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}" class="manga-card">
+                    <a href="{{ url_for('manga.manga_detail', slug=item.manga.slug) }}" class="manga-card">
                         <div class="manga-cover-wrap">
                             {% if item.cover %}
                                 <img src="{{ item.cover }}" alt="{{ item.manga.title }}" loading="lazy" class="manga-cover">

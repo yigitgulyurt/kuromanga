@@ -17,6 +17,7 @@ def create_app(config_object=None):
 
     with app.app_context():
         try:
+            from app.models.manga import Manga
             uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
             if uri.startswith("sqlite"):
                 rows = db.session.execute("PRAGMA table_info('user')").fetchall()
@@ -25,6 +26,20 @@ def create_app(config_object=None):
                     db.session.execute("ALTER TABLE user ADD COLUMN password_hash VARCHAR(256)")
                 if "is_admin" not in cols:
                     db.session.execute("ALTER TABLE user ADD COLUMN is_admin BOOLEAN DEFAULT 0")
+                
+                # Manga slug migration
+                m_rows = db.session.execute("PRAGMA table_info('manga')").fetchall()
+                m_cols = {r[1] for r in m_rows}
+                if "slug" not in m_cols:
+                    db.session.execute("ALTER TABLE manga ADD COLUMN slug VARCHAR(255)")
+                    db.session.commit()
+                    # Populate slugs for existing mangas
+                    mangas = Manga.query.all()
+                    for m in mangas:
+                        if not m.slug:
+                            m.slug = Manga.slugify(m.title)
+                    db.session.commit()
+                
                 db.session.commit()
         except Exception:
             pass
