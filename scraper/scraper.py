@@ -4,7 +4,6 @@ import argparse
 import os
 import re
 import sys
-import subprocess
 import signal
 from typing import List, Set, Optional, Tuple
 from urllib.parse import urljoin, urlparse
@@ -51,12 +50,6 @@ def parse_args() -> argparse.Namespace:
         "-c",
         type=int,
         help="Number of chapters to scrape starting from --start-url (auto-increment).",
-    )
-    parser.add_argument(
-        "--run-indexer",
-        "-ri",
-        action="store_true",
-        help="After scraping/renaming, trigger the indexer via subprocess (keeps scraper decoupled).",
     )
     parser.add_argument(
         "--img-class",
@@ -237,24 +230,6 @@ def _signal_handler(signum, frame):
     raise SystemExit(1)
 
 
-def trigger_indexer_subprocess() -> None:
-    try:
-        cmd = [
-            sys.executable,
-            "-c",
-            (
-                "import os;"
-                "from app.services.storage_indexer import index_storage;"
-                "base=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage','manga');"
-                "logs=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage','run_logs');"
-                "print(index_storage(base, run_logs_path=logs, force=True))"
-            ),
-        ]
-        subprocess.run(cmd, check=False)
-    except Exception:
-        pass
-
-
 def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], logger: RunLogger, resume: bool = False, required_class: Optional[str] = None) -> Tuple[str, int]:
     html = fetch_html(chapter_url)
 
@@ -388,9 +363,6 @@ def main() -> None:
         CURRENT_LOGGER = None
 
     sys.stdout.write(f"Images saved under: {output_dir}{os.linesep}")
-    if args.run_indexer:
-        logger.set_indexer_triggered(True)
-        trigger_indexer_subprocess()
 
 
 if __name__ == "__main__":

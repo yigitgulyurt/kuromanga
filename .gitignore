@@ -32,7 +32,7 @@ env/
 ENV
 
 instance/
-
+instance/kuromanga.db
 /storage/
 *.db
 kuromanga.db
