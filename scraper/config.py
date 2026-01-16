@@ -5,7 +5,7 @@ import os
 
 USER_AGENT = os.environ.get(
     "SCRAPER_USER_AGENT",
-    "KuromangaScraper/1.0 (+https://example.com; contact: admin@example.com)",
+    "scrape/1.0 (+https://example.com; contact: admin@example.com)",
 )
 
 REQUEST_TIMEOUT = float(os.environ.get("SCRAPER_REQUEST_TIMEOUT", "10"))

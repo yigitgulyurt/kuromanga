@@ -6,7 +6,7 @@ import re
 import sys
 import subprocess
 import signal
-from typing import List, Set, Optional
+from typing import List, Set, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 from .logger import RunLogger
 
@@ -25,40 +25,48 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--manga-url",
+        "-mu",
         required=True,
         help="URL of the manga chapter page to scrape.",
     )
     parser.add_argument(
         "--manga-name",
+        "-mn",
         required=True,
         help="Human readable manga name (used for storage slug and logs).",
     )
     parser.add_argument(
         "--formats",
+        "-f",
         default="jpg",
         help="Comma-separated list of allowed image formats (e.g., jpg,png,webp). Default: jpg",
     )
     parser.add_argument(
         "--start-url",
+        "-su",
         help="Starting chapter URL for multi-chapter scraping.",
     )
     parser.add_argument(
         "--chapters",
+        "-c",
         type=int,
         help="Number of chapters to scrape starting from --start-url (auto-increment).",
     )
     parser.add_argument(
-        "--rename-only",
-        action="store_true",
-        help="Do not download; rename existing chapter files to zero-padded canonical format.",
-    )
-    parser.add_argument(
         "--run-indexer",
+        "-ri",
         action="store_true",
         help="After scraping/renaming, trigger the indexer via subprocess (keeps scraper decoupled).",
     )
     parser.add_argument(
+        "--img-class",
+        "-class",
+        dest="img_class",
+        help="Download only images with the specified HTML class attribute.",
+    )
+    parser.add_argument(
         "--resume",
+        "-r",
         action="store_true",
         help="Skip already-downloaded chapters/pages based on filesystem state.",
     )
@@ -86,11 +94,29 @@ def derive_chapter_number(chapter_url: str) -> str:
     return "1"
 
 
-def extract_image_urls(html: str, base_url: str) -> List[str]:
+def extract_image_urls(html: str, base_url: str, required_class: Optional[str]) -> List[str]:
     soup = BeautifulSoup(html, "html.parser")
     candidates = []
 
     for img in soup.find_all("img"):
+        if required_class:
+            classes = img.get("class")
+            if not classes:
+                # allow string form too
+                cls_str = img.get("class", "")
+                if not cls_str:
+                    continue
+            match = False
+            if isinstance(classes, list):
+                match = required_class in [c.strip() for c in classes if c]
+            else:
+                try:
+                    tokens = str(classes).split()
+                    match = required_class in tokens
+                except Exception:
+                    match = False
+            if not match:
+                continue
         src = img.get("src")
         if not src:
             continue
@@ -130,39 +156,13 @@ def is_chapter_complete(manga_slug: str, chapter_number: str) -> bool:
     return len(files) > 0
 
 
-def determine_filename(index: int, total: int, image_url: str) -> str:
+def determine_padded_filename(index: int, total: int, image_url: str) -> str:
     width = max(3, len(str(total)))
     parsed = urlparse(image_url)
     _, ext = os.path.splitext(parsed.path)
     if not ext:
         ext = ".jpg"
-    padded_index = str(index).zfill(width)
-    return f"{padded_index}{ext}"
-
-def rename_chapter_files_count(manga_slug: str, chapter_number: str) -> int:
-    chapter_dir = build_output_directory(manga_slug, chapter_number)
-    if not os.path.isdir(chapter_dir):
-        return 0
-    files = [f for f in os.listdir(chapter_dir) if os.path.isfile(os.path.join(chapter_dir, f))]
-    files.sort()
-    total = len(files)
-    width = max(3, len(str(total)))
-    renamed = 0
-    for idx, fname in enumerate(files, start=1):
-        _, ext = os.path.splitext(fname)
-        ext = (ext or ".jpg").lower()
-        target = f"{str(idx).zfill(width)}{ext}"
-        if fname != target:
-            src_path = os.path.join(chapter_dir, fname)
-            dst_path = os.path.join(chapter_dir, target)
-            if os.path.exists(dst_path):
-                tmp_path = os.path.join(chapter_dir, f"__tmp_{idx}{ext}")
-                os.replace(src_path, tmp_path)
-                os.replace(tmp_path, dst_path)
-            else:
-                os.replace(src_path, dst_path)
-            renamed += 1
-    return renamed
+    return f"{str(index).zfill(width)}{ext}"
 
 
 def slugify_name(name: str) -> str:
@@ -213,30 +213,6 @@ def increment_chapter_url(base_url: str, next_chapter_number: int) -> str:
     return parsed._replace(path=new_path).geturl()
 
 
-def rename_chapter_files(manga_slug: str, chapter_number: str) -> str:
-    chapter_dir = build_output_directory(manga_slug, chapter_number)
-    if not os.path.isdir(chapter_dir):
-        return chapter_dir
-    files = [f for f in os.listdir(chapter_dir) if os.path.isfile(os.path.join(chapter_dir, f))]
-    files.sort()
-    total = len(files)
-    width = max(3, len(str(total)))
-    for idx, fname in enumerate(files, start=1):
-        _, ext = os.path.splitext(fname)
-        ext = (ext or ".jpg").lower()
-        target = f"{str(idx).zfill(width)}{ext}"
-        if fname != target:
-            src_path = os.path.join(chapter_dir, fname)
-            dst_path = os.path.join(chapter_dir, target)
-            if os.path.exists(dst_path):
-                tmp_path = os.path.join(chapter_dir, f"__tmp_{idx}{ext}")
-                os.replace(src_path, tmp_path)
-                os.replace(tmp_path, dst_path)
-            else:
-                os.replace(src_path, dst_path)
-    return chapter_dir
-
-
 def _signal_handler(signum, frame):
     global CURRENT_LOGGER
     name = None
@@ -279,10 +255,10 @@ def trigger_indexer_subprocess() -> None:
         pass
 
 
-def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], logger: RunLogger, resume: bool = False) -> str:
+def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], logger: RunLogger, resume: bool = False, required_class: Optional[str] = None) -> Tuple[str, int]:
     html = fetch_html(chapter_url)
 
-    image_urls = extract_image_urls(html, chapter_url)
+    image_urls = extract_image_urls(html, chapter_url, required_class)
     if not image_urls:
         raise RuntimeError("No image URLs were found on the provided page.")
 
@@ -293,14 +269,17 @@ def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], lo
     image_urls = filter_by_formats(image_urls, allowed_exts)
     total = len(image_urls)
     logger.update_stats(manga=1, chapters=1, pages=total)
+    written = 0
     for index, image_url in enumerate(image_urls, start=1):
-        filename = determine_filename(index, total, image_url)
-        destination_path = os.path.join(output_dir, filename)
+        final_name = determine_padded_filename(index, total, image_url)
+        destination_path = os.path.join(output_dir, final_name)
         if resume and os.path.exists(destination_path):
             continue
         download_image(image_url, destination_path)
+        written += 1
+        logger.add_files_written(1)
 
-    return output_dir
+    return output_dir, written
 
 
 def main() -> None:
@@ -315,7 +294,7 @@ def main() -> None:
             allowed_tokens.append(tt)
     logger = RunLogger(
         component="scraper",
-        run_type="rename" if args.rename_only else "scrape",
+        run_type="scrape",
         manga_slug=manga_slug,
         manga_name=args.manga_name,
         start_url=args.start_url,
@@ -341,24 +320,7 @@ def main() -> None:
         pass
 
     try:
-        if args.rename_only:
-            if args.chapters and args.start_url:
-                start = 1
-                for i in range(args.chapters):
-                    next_num = start + i
-                    target_url = increment_chapter_url(args.start_url, next_num)
-                    chapter_number = derive_chapter_number(target_url)
-                    renamed = rename_chapter_files_count(manga_slug, chapter_number)
-                    logger.add_files_written(renamed)
-                output_dir = build_output_directory(manga_slug, derive_chapter_number(args.start_url))
-                logger.finish("success")
-            else:
-                chapter_number = derive_chapter_number(chapter_url)
-                renamed = rename_chapter_files_count(manga_slug, chapter_number)
-                logger.add_files_written(renamed)
-                output_dir = build_output_directory(manga_slug, chapter_number)
-                logger.finish("success")
-        elif args.chapters and args.start_url:
+        if args.chapters and args.start_url:
             output_dir = ""
             start = 1
             start_num = derive_chapter_number(args.start_url)
@@ -379,8 +341,8 @@ def main() -> None:
                         logger._write()
                     continue
 
-                output_dir = scrape_chapter(target_url, manga_slug, allowed_exts, logger, resume=args.resume)
-                if chapter_int is not None:
+                output_dir, wrote = scrape_chapter(target_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None))
+                if chapter_int is not None and wrote > 0:
                     logger.downloaded_chapters.append(chapter_int)
                     logger.last_completed_chapter = chapter_int
                     logger._write()
@@ -407,8 +369,8 @@ def main() -> None:
                 output_dir = build_output_directory(manga_slug, chapter_number)
                 logger.finish("success")
             else:
-                output_dir = scrape_chapter(chapter_url, manga_slug, allowed_exts, logger, resume=args.resume)
-                if chapter_int is not None:
+                output_dir, wrote = scrape_chapter(chapter_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None))
+                if chapter_int is not None and wrote > 0:
                     logger.downloaded_chapters.append(chapter_int)
                     logger.last_completed_chapter = chapter_int
                     logger._write()

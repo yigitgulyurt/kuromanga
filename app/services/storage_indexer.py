@@ -6,7 +6,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 
 from app import db
 from app.models.manga import Manga
@@ -72,50 +72,91 @@ def _ensure_page(chapter_id: int, page_number: int, image_path: str) -> Page:
     return pg
 
 
-def _scan_one_chapter_dir(manga_slug: str, chapter_dir: Path) -> Tuple[int, int]:
-    chapter_number = _parse_chapter_number(chapter_dir.name)
-    if chapter_number is None:
-        return (0, 0)
+def _collect_fs_state(root: Path) -> Tuple[Dict[str, Dict[int, Tuple[str, List[Path]]]], Set[str], bool, int, int]:
+    state: Dict[str, Dict[int, Tuple[str, List[Path]]]] = {}
+    slugs: Set[str] = set()
+    partial = False
+    chapters_count = 0
+    pages_count = 0
+    for slug_dir in [p for p in root.iterdir() if p.is_dir()]:
+        slug = slug_dir.name
+        slugs.add(slug)
+        state.setdefault(slug, {})
+        for ch_dir in [p for p in slug_dir.iterdir() if p.is_dir()]:
+            num = _parse_chapter_number(ch_dir.name)
+            if num is None:
+                partial = True
+                continue
+            images = sorted([p for p in ch_dir.iterdir() if _is_image_file(p)])
+            if not images:
+                partial = True
+                continue
+            state[slug][num] = (ch_dir.name, images)
+            chapters_count += 1
+            pages_count += len(images)
+    return state, slugs, partial, chapters_count, pages_count
 
-    images = sorted([p for p in chapter_dir.iterdir() if _is_image_file(p)])
-    if not images:
-        return (0, 0)
 
-    manga = _ensure_manga(manga_slug)
-    chapter_title = f"Chapter {chapter_number}"
-    chapter = _ensure_chapter(manga.id, chapter_number, chapter_title)
-
-    total = len(images)
-    for idx, img in enumerate(images, start=1):
-        width = max(3, len(str(total)))
-        padded = str(idx).zfill(width)
-        # Build web-visible path under /storage/manga/...
-        web_path = f"/storage/manga/{manga_slug}/{chapter_dir.name}/{img.name}"
-        _ensure_page(chapter.id, idx, web_path)
-
-    return (1, total)
+def _remove_manga(m: Manga) -> int:
+    chapters_removed = 0
+    for ch in Chapter.query.filter_by(manga_id=m.id).all():
+        for pg in Page.query.filter_by(chapter_id=ch.id).all():
+            db.session.delete(pg)
+        db.session.delete(ch)
+        chapters_removed += 1
+    db.session.delete(m)
+    db.session.commit()
+    return chapters_removed
 
 
-def _scan_manga_slug_dir(slug_dir: Path) -> Tuple[int, int]:
-    if not slug_dir.is_dir():
-        return (0, 0)
-    chapter_dirs = [p for p in slug_dir.iterdir() if p.is_dir()]
-    chapters_added = 0
-    pages_added = 0
-    for ch in chapter_dirs:
-        c_added, p_added = _scan_one_chapter_dir(slug_dir.name, ch)
-        chapters_added += c_added
-        pages_added += p_added
-    return (chapters_added, pages_added)
+def _synch_manga(slug: str, chapters_map: Dict[int, Tuple[str, List[Path]]], stats: Dict[str, int]) -> None:
+    title = _humanize_title_from_slug(slug)
+    manga = Manga.query.filter_by(title=title).first()
+    if manga is None:
+        manga = Manga(title=title, description=None)
+        db.session.add(manga)
+        db.session.commit()
+        stats["added_manga"] += 1
+    fs_chapter_numbers = set(chapters_map.keys())
+    db_chapters = Chapter.query.filter_by(manga_id=manga.id).all()
+    for ch in db_chapters:
+        if ch.number not in fs_chapter_numbers:
+            for pg in Page.query.filter_by(chapter_id=ch.id).all():
+                db.session.delete(pg)
+            db.session.delete(ch)
+            stats["removed_chapters"] += 1
+    db.session.commit()
+    for ch_num, (ch_dir_name, images) in sorted(chapters_map.items(), key=lambda x: x[0]):
+        chapter = Chapter.query.filter_by(manga_id=manga.id, number=ch_num).first()
+        if chapter is None:
+            chapter = Chapter(manga_id=manga.id, number=ch_num, title=f"Chapter {ch_num}")
+            db.session.add(chapter)
+            db.session.commit()
+            stats["added_chapters"] += 1
+        target_total = len(images)
+        existing_pages = Page.query.filter_by(chapter_id=chapter.id).all()
+        for pg in existing_pages:
+            if pg.number < 1 or pg.number > target_total:
+                db.session.delete(pg)
+        db.session.commit()
+        for idx, img in enumerate(images, start=1):
+            web_path = f"/storage/manga/{slug}/{ch_dir_name}/{img.name}"
+            existing = Page.query.filter_by(chapter_id=chapter.id, number=idx).first()
+            if existing is None:
+                new_pg = Page(chapter_id=chapter.id, number=idx, image_path=web_path)
+                db.session.add(new_pg)
+                stats["pages_added"] += 1
+            else:
+                if existing.image_path != web_path:
+                    existing.image_path = web_path
+        db.session.commit()
 
 
 def _write_indexer_log(run_logs_path: str, status: str, stats: Dict, start_time: datetime, error: Optional[str] = None, processed_slugs: Optional[List[str]] = None, files_written: int = 0, chapter_range: Optional[str] = None):
     if not run_logs_path:
         return
-    
     filename = f"indexer_{int(start_time.timestamp())}.json"
     filepath = os.path.join(run_logs_path, filename)
-    
     data = {
         "run_id": str(uuid.uuid4()),
         "component": "indexer",
@@ -135,7 +176,6 @@ def _write_indexer_log(run_logs_path: str, status: str, stats: Dict, start_time:
         "stats": stats,
         "processed_slugs": processed_slugs or [],
     }
-    
     try:
         os.makedirs(run_logs_path, exist_ok=True)
         with open(filepath, "w", encoding="utf-8") as f:
@@ -145,52 +185,56 @@ def _write_indexer_log(run_logs_path: str, status: str, stats: Dict, start_time:
 
 
 def index_storage(base_path: str, run_logs_path: str = None, force: bool = False) -> Dict[str, int]:
-    global _LAST_SCAN_TS
-
     start_time = datetime.now()
-    stats = {"manga": 0, "chapters": 0, "pages": 0}
-    
+    stats = {
+        "manga": 0,
+        "chapters": 0,
+        "pages": 0,
+        "added_manga": 0,
+        "added_chapters": 0,
+        "removed_manga": 0,
+        "removed_chapters": 0,
+        "pages_added": 0,
+    }
     if run_logs_path:
         _write_indexer_log(run_logs_path, "running", stats, start_time)
-
-    now = time.time()
-    if not force and _LAST_SCAN_TS and (now - _LAST_SCAN_TS) < _SCAN_INTERVAL_SEC:
-        if run_logs_path:
-             _write_indexer_log(run_logs_path, "partial", stats, start_time, error="Skipped (cached)", processed_slugs=[], files_written=0, chapter_range=None)
-        return {"status": 0, "manga_dirs": 0, "chapters_added": 0, "pages_added": 0}
-
     try:
         root = Path(base_path)
-        if not root.exists() or not root.is_dir():
+        if not base_path or not root.exists() or not root.is_dir():
             if run_logs_path:
                 _write_indexer_log(run_logs_path, "failed", stats, start_time, error="Storage path not found", processed_slugs=[], files_written=0, chapter_range=None)
-            return {"status": 0, "manga_dirs": 0, "chapters_added": 0, "pages_added": 0}
-
-        manga_dirs = [p for p in root.iterdir() if p.is_dir()]
-        chapters_total = 0
-        pages_total = 0
-        slugs: List[str] = []
-        
-        for slug_dir in manga_dirs:
-            slugs.append(slug_dir.name)
-            c_added, p_added = _scan_manga_slug_dir(slug_dir)
-            chapters_total += c_added
-            pages_total += p_added
-        
-        _LAST_SCAN_TS = now
-        
-        stats["manga"] = len(manga_dirs) # Just count of dirs scanned
-        stats["chapters"] = chapters_total
-        stats["pages"] = pages_total
-
+            return {
+                "status": 0,
+                "manga_dirs": 0,
+                "chapters_added": 0,
+                "pages_added": 0,
+                "removed_manga": 0,
+                "removed_chapters": 0,
+            }
+        fs_state, fs_slugs, partial, chapters_count, pages_count = _collect_fs_state(root)
+        stats["manga"] = len(fs_slugs)
+        stats["chapters"] = chapters_count
+        stats["pages"] = pages_count
+        processed_slugs = sorted(list(fs_slugs))
+        db_mangas = Manga.query.all()
+        fs_titles = set(_humanize_title_from_slug(s) for s in fs_slugs)
+        for m in db_mangas:
+            if m.title not in fs_titles:
+                removed = _remove_manga(m)
+                stats["removed_manga"] += 1
+                stats["removed_chapters"] += removed
+        for slug, chapters_map in fs_state.items():
+            _synch_manga(slug, chapters_map, stats)
+        status_str = "success" if not partial else "partial"
         if run_logs_path:
-             _write_indexer_log(run_logs_path, "success", stats, start_time, error=None, processed_slugs=slugs, files_written=pages_total, chapter_range=None)
-
+            _write_indexer_log(run_logs_path, status_str, stats, start_time, error=None if status_str == "success" else "Some entries skipped", processed_slugs=processed_slugs, files_written=stats["pages_added"], chapter_range=None)
         return {
-            "status": 1,
-            "manga_dirs": len(manga_dirs),
-            "chapters_added": chapters_total,
-            "pages_added": pages_total,
+            "status": 1 if status_str == "success" else 2,
+            "manga_dirs": len(fs_slugs),
+            "chapters_added": stats["added_chapters"],
+            "pages_added": stats["pages_added"],
+            "removed_manga": stats["removed_manga"],
+            "removed_chapters": stats["removed_chapters"],
         }
     except Exception as e:
         if run_logs_path:
