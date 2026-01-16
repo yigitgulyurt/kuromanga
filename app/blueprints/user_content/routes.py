@@ -6,6 +6,7 @@ from app.models.favorite import Favorite
 from app.models.to_read import ToRead
 from app.models.manga import Manga
 from app.models.chapter import Chapter
+from app.models.user import User
 from app.models.manga import Manga
 
 
@@ -82,11 +83,16 @@ def delete_comment(comment_id):
     user_id = _require_user()
     if not user_id:
         return jsonify({"error": "login_required"}), 401
+    
+    user = User.query.get(user_id)
     c = Comment.query.get(comment_id)
     if not c:
         return jsonify({"error": "comment_not_found"}), 404
-    if c.user_id != user_id:
+        
+    # Yorum sahibi veya admin silebilir
+    if c.user_id != user_id and not (user and user.is_admin):
         return jsonify({"error": "forbidden"}), 403
+        
     db.session.delete(c)
     db.session.commit()
     return jsonify({"status": "ok"}), 200
@@ -141,16 +147,35 @@ def profile():
     user_id = _require_user()
     if not user_id:
         return redirect(url_for("auth.login"))
+    
     favorites = Favorite.query.filter_by(user_id=user_id).all()
     to_read_items = ToRead.query.filter_by(user_id=user_id).all()
+    
     fav_manga = []
     tr_manga = []
+    
     for f in favorites:
         m = Manga.query.get(f.manga_id)
         if m:
-            fav_manga.append(m)
+            cover = None
+            chs = Chapter.query.filter_by(manga_id=m.id).order_by(Chapter.number.asc()).all()
+            if chs:
+                from app.repositories.page_repository import PageRepository
+                pages = PageRepository().get_for_chapter(chs[0].id)
+                if pages:
+                    cover = pages[0].image_path
+            fav_manga.append({"manga": m, "cover": cover})
+            
     for t in to_read_items:
         m = Manga.query.get(t.manga_id)
         if m:
-            tr_manga.append(m)
+            cover = None
+            chs = Chapter.query.filter_by(manga_id=m.id).order_by(Chapter.number.asc()).all()
+            if chs:
+                from app.repositories.page_repository import PageRepository
+                pages = PageRepository().get_for_chapter(chs[0].id)
+                if pages:
+                    cover = pages[0].image_path
+            tr_manga.append({"manga": m, "cover": cover})
+            
     return render_template("user/profile.html", favorites=fav_manga, to_read=tr_manga)

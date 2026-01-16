@@ -1,30 +1,50 @@
 {% extends "base.html" %}
-{% block title %}Manga List{% endblock %}
+{% block title %}Keşfet - Kuromanga{% endblock %}
 {% block content %}
-<h2>Manga Listesi</h2>
-<div class="grid">
+<div class="hero-section">
+    <div class="hero-content">
+        <h1>Manga Keşfet</h1>
+        <p class="text-muted">En yeni ve popüler mangaları okumaya hemen başla.</p>
+    </div>
+    <div class="hero-stats">
+        <span class="badge">{{ display_manga|length }} Manga</span>
+    </div>
+</div>
+
+<div class="section-header mb-8">
+    <h2 class="section-title">Son Eklenenler</h2>
+</div>
+
+<div class="manga-grid">
   {% for item in display_manga %}
-    <div class="card">
-      <div class="cover-wrap">
-        <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">
-          {% if item.cover %}
-            <img class="card-cover" src="{{ item.cover }}" alt="{{ item.manga.title }}">
-          {% else %}
-            <div class="card-cover"></div>
-          {% endif %}
-        </a>
-        <div class="cover-overlay">
-          <a class="btn btn-primary" href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">Görüntüle</a>
+    <article class="manga-card">
+      <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}" class="manga-cover-wrap">
+        {% if item.cover %}
+          <img class="manga-cover" src="{{ item.cover }}" alt="{{ item.manga.title }}" loading="lazy">
+        {% else %}
+          <div class="manga-cover" style="background: var(--bg-soft); display: flex; align-items: center; justify-content: center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          </div>
+        {% endif %}
+        <div class="manga-overlay">
+           <span class="btn btn-primary btn-sm">Oku</span>
         </div>
-      </div>
-      <div class="card-body">
-        <h3 class="card-title">{{ item.manga.title }}</h3>
+      </a>
+      <div class="manga-info">
+        <h3 class="manga-title">
+          <a href="{{ url_for('manga.manga_detail', manga_id=item.manga.id) }}">{{ item.manga.title }}</a>
+        </h3>
         {% if item.manga.description %}
-          <p class="card-desc">{{ item.manga.description }}</p>
+          <p class="card-desc" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px;">
+            {{ item.manga.description }}
+          </p>
         {% endif %}
       </div>
-    </div>
+    </article>
   {% else %}
-    <p>Hiç manga bulunamadı.</p>
+    <div class="section text-center">
+      <p class="text-muted">Henüz hiç manga eklenmemiş.</p>
+    </div>
   {% endfor %}
+</div>
 {% endblock %}

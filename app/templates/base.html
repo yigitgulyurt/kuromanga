@@ -12,36 +12,227 @@
         <div class="brand">
             <a href="{{ url_for('manga.manga_list') }}" class="brand-link">Kuromanga</a>
         </div>
-        <button class="mobile-toggle" id="mobile-toggle" aria-label="Menu">☰</button>
+        
+        <button class="mobile-toggle" id="mobile-toggle" aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
         <div class="nav-content" id="nav-content">
             <nav class="menu">
-                <a href="{{ url_for('manga.manga_list') }}">Mangalar</a>
+                <a href="{{ url_for('manga.manga_list') }}" class="{{ 'active' if request.endpoint == 'manga.manga_list' }}">Mangalar</a>
                 {% if current_user and current_user.is_admin %}
-                    <a href="{{ url_for('status.dashboard') }}">Kontrol Paneli</a>
+                    <a href="{{ url_for('status.dashboard') }}" class="{{ 'active' if request.endpoint == 'status.dashboard' }}">Yönetim</a>
                 {% endif %}
-                <a href="{{ url_for('user_content.profile') }}">Profilim</a>
             </nav>
+            
             <nav class="actions">
                 {% if is_authenticated and current_user %}
-                    <a class="btn btn-secondary" href="{{ url_for('user_content.profile') }}">Profilim</a>
-                    <form method="POST" action="{{ url_for('auth.logout') }}" class="inline" style="width: 100%;">
-                        <button class="btn btn-outline" type="submit" style="width: 100%;">Çıkış Yap!</button>
+                    <a class="btn btn-secondary" href="{{ url_for('user_content.profile') }}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        Profilim
+                    </a>
+                    <form method="POST" action="{{ url_for('auth.logout') }}" class="inline">
+                        <button class="btn btn-outline" type="submit">Çıkış</button>
                     </form>
                 {% else %}
-                    <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Kayıt Ol</a>
-                    <a class="btn btn-outline" href="{{ url_for('auth.login') }}">Giriş Yap</a>
+                    <button class="btn btn-outline" onclick="openModal('login-modal')">Giriş Yap</button>
+                    <button class="btn btn-primary" onclick="openModal('register-modal')">Kayıt Ol</button>
                 {% endif %}
             </nav>
         </div>
     </div>
 </header>
-<script>
-    document.getElementById('mobile-toggle').addEventListener('click', function() {
-        document.getElementById('nav-content').classList.toggle('active');
-    });
-</script>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="login-modal">
+    <div class="modal-container">
+        <button class="modal-close" onclick="closeModal('login-modal')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="modal-content">
+            <div class="auth-header-v2">
+                <h2>Tekrar Hoş Geldin</h2>
+                <p>Favori mangalarına devam etmek için giriş yap.</p>
+            </div>
+            <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form-v2">
+                <div class="input-group">
+                    <label for="login-username">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <input id="login-username" name="username" type="text" class="form-control" placeholder="Kullanıcı adını gir" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Şifre</label>
+                    <div class="input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <input id="login-password" name="password" type="password" class="form-control" placeholder="Şifreni gir" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
+            </form>
+            <div class="text-center mt-4">
+                <p class="text-muted">Hesabın yok mu? <a href="javascript:void(0)" onclick="switchModal('login-modal', 'register-modal')" style="color: var(--primary); font-weight: 700;">Kayıt Ol</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal-overlay" id="register-modal">
+    <div class="modal-container">
+        <button class="modal-close" onclick="closeModal('register-modal')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="modal-content">
+            <div class="auth-header-v2">
+                <h2>Aramıza Katıl</h2>
+                <p>Yeni bir hesap oluştur ve maceraya başla.</p>
+            </div>
+            <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form-v2">
+                <div class="input-group">
+                    <label for="reg-username">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <input id="reg-username" name="username" type="text" class="form-control" placeholder="Kullanıcı adını belirle" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="reg-password">Şifre</label>
+                    <div class="input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <input id="reg-password" name="password" type="password" class="form-control" placeholder="Güçlü bir şifre belirle" required minlength="6">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Hesap Oluştur</button>
+            </form>
+            <div class="text-center mt-4">
+                <p class="text-muted">Zaten üye misin? <a href="javascript:void(0)" onclick="switchModal('register-modal', 'login-modal')" style="color: var(--primary); font-weight: 700;">Giriş Yap</a></p>
+            </div>
+        </div>
+    </div>
+</div>
 <main class="container content">
     {% block content %}{% endblock %}
 </main>
+
+<footer class="footer">
+    <div class="container footer-inner">
+        <div class="footer-brand">
+            <a href="{{ url_for('manga.manga_list') }}" class="brand-link">Kuromanga</a>
+            <p>En sevdiğiniz mangaları yüksek kalitede okuyun.</p>
+        </div>
+        <div class="footer-links">
+            <div class="footer-group">
+                <h4>Hızlı Menü</h4>
+                <a href="{{ url_for('manga.manga_list') }}">Mangalar</a>
+                {% if current_user and current_user.is_admin %}
+                    <a href="{{ url_for('status.dashboard') }}">Yönetim</a>
+                {% endif %}
+            </div>
+            <div class="footer-group">
+                <h4>Kullanıcı</h4>
+                {% if is_authenticated and current_user %}
+                    <a href="{{ url_for('user_content.profile') }}">Profilim</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Giriş Yap</a>
+                    <a href="{{ url_for('auth.register') }}">Kayıt Ol</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom container">
+        <p>&copy; 2024 Kuromanga. Tüm hakları saklıdır.</p>
+    </div>
+</footer>
+
+<button id="back-to-top" class="back-to-top" aria-label="Yukarı Çık">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+</button>
+
+<script>
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const navContent = document.getElementById('nav-content');
+    const backToTop = document.getElementById('back-to-top');
+
+    // Mobile Menu
+    mobileToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        navContent.classList.toggle('active');
+        document.querySelector('.nav').classList.toggle('menu-open');
+        document.body.classList.toggle('no-scroll');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!navContent.contains(e.target) && !mobileToggle.contains(e.target)) {
+            navContent.classList.remove('active');
+            document.querySelector('.nav').classList.remove('menu-open');
+            document.body.classList.remove('no-scroll');
+        }
+    });
+
+    // Back to Top
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    });
+
+    backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Scrollbar Width Calculation
+    function setScrollbarWidth() {
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        document.documentElement.style.setProperty('--scrollbar-width', scrollbarWidth + 'px');
+    }
+    
+    window.addEventListener('load', setScrollbarWidth);
+    window.addEventListener('resize', setScrollbarWidth);
+
+    // Modal Functions
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+        document.body.classList.add('no-scroll');
+        // Close mobile menu if open
+        navContent.classList.remove('active');
+        document.querySelector('.nav').classList.remove('menu-open');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+        if (!navContent.classList.contains('active')) {
+            document.body.classList.remove('no-scroll');
+        }
+    }
+
+    function switchModal(fromId, toId) {
+        closeModal(fromId);
+        setTimeout(() => {
+            openModal(toId);
+        }, 300);
+    }
+
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal(this.id);
+            }
+        });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                closeModal(modal.id);
+            });
+        }
+    });
+</script>
 </body>
 </html>

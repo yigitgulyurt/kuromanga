@@ -1,22 +1,46 @@
 {% extends "base.html" %}
-{% block title %}Kayıt Ol{% endblock %}
+{% block title %}Kayıt Ol - Kuromanga{% endblock %}
 {% block content %}
-<div class="auth-wrap">
-  <div class="section auth-card">
-    <h2>Kayıt Ol</h2>
-    {% if error %}
-    <div class="alert">{{ error }}</div>
-    {% endif %}
-    <form method="POST" action="{{ url_for('auth.register') }}" class="form">
-      <label for="username">Kullanıcı adı</label>
-      <input id="username" name="username" type="text" placeholder="Kullanıcı adı" required>
-      <label for="password">Şifre</label>
-      <input id="password" name="password" type="password" placeholder="Şifre" required minlength="6">
-      <button type="submit" class="btn btn-secondary">Hesap oluştur</button>
-    </form>
-    <div class="hint">
-      Zaten hesabın var mı? <a href="{{ url_for('auth.login') }}">Giriş yap</a>
+<div class="auth-container" style="min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px;">
+    <div class="modal-container" style="animation: none;">
+        <div class="modal-content">
+            <div class="auth-header-v2">
+                <h2>Aramıza Katıl</h2>
+                <p>Yeni bir hesap oluştur ve maceraya başla.</p>
+            </div>
+
+            {% if error %}
+                <div class="alert mb-8" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 12px; border-radius: var(--radius); border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 24px;">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form-v2">
+                <div class="input-group">
+                    <label for="username">Kullanıcı Adı</label>
+                    <div class="input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <input id="username" name="username" type="text" class="form-control" placeholder="Kullanıcı adını belirle" required autofocus>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Şifre</label>
+                    <div class="input-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <input id="password" name="password" type="password" class="form-control" placeholder="Güçlü bir şifre belirle" required minlength="6">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Hesap Oluştur
+                </button>
+            </form>
+
+            <div class="auth-footer" style="text-align: center; margin-top: 24px;">
+                <p class="text-muted">Zaten bir hesabın var mı? <a href="{{ url_for('auth.login') }}" style="color: var(--primary); font-weight: 700;">Giriş yap</a></p>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}

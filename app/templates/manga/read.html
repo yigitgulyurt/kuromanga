@@ -1,118 +1,71 @@
 {% extends "base.html" %}
-
 {% block title %}{{ manga.title }} - Bölüm {{ chapter.number }}{% endblock %}
 
 {% block content %}
-<section class="section">
 <div class="reader-toolbar">
-    <button class="btn btn-sm btn-outline" onclick="changeZoom('zoom-50')">50%</button>
-    <button class="btn btn-sm btn-outline" onclick="changeZoom('zoom-75')">75%</button>
-    <button class="btn btn-sm btn-outline" onclick="changeZoom('zoom-100')">100%</button>
-    <button class="btn btn-sm btn-primary" onclick="changeZoom('fit-width')">Genişliğe Sığdır</button>
-    <button class="btn btn-sm btn-secondary" onclick="changeZoom('fit-height')">Yüksekliğe Sığdır</button>
-</div>
-
-<div class="flex justify-between items-center mb-16">
-    <h2>{{ manga.title }} - Bölüm {{ chapter.number }}</h2>
-    <div class="nav-buttons" style="display: flex; gap: 8px;">
+  <div class="container flex justify-between items-center" style="gap: 16px;">
+    <div class="flex gap-4 zoom-controls">
+      <button class="btn btn-sm btn-outline" onclick="changeZoom('zoom-50')">50%</button>
+      <button class="btn btn-sm btn-outline" onclick="changeZoom('zoom-75')">75%</button>
+      <button class="btn btn-sm btn-outline" onclick="changeZoom('zoom-100')">100%</button>
+      <button class="btn btn-sm btn-primary" onclick="changeZoom('fit-width')">Sığdır</button>
+    </div>
+    
+    <div class="flex gap-4 items-center">
+      <h2 style="font-size: 1.1rem; margin: 0; white-space: nowrap; display: none; @media(min-width: 600px){display: block;}">Bölüm {{ chapter.number }}</h2>
+      <div class="flex gap-4">
         {% if prev_chapter %}
-            <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=prev_chapter.id) }}" class="btn btn-outline btn-sm" id="prev-btn">← Önceki</a>
+          <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=prev_chapter.id) }}" class="btn btn-secondary btn-sm" id="prev-btn">←</a>
         {% endif %}
         {% if next_chapter %}
-            <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=next_chapter.id) }}" class="btn btn-primary btn-sm" id="next-btn">Sonraki →</a>
+          <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=next_chapter.id) }}" class="btn btn-primary btn-sm" id="next-btn">Sonraki →</a>
         {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 
-{% if chapter.title %}
-    <h3 class="text-center mb-16">{{ chapter.title }}</h3>
-{% endif %}
-
-<div id="reader-root" class="reader-container fit-width"
-     data-manga-id="{{ manga.id }}"
-     data-chapter-id="{{ chapter.id }}">
-    <div>
-        {% for page in pages %}
-            <div class="manga-page" data-page-number="{{ page.number }}">
-                <img class="page-img" src="{{ page.image_path }}" alt="Page {{ page.number }}" loading="lazy">
-            </div>
-        {% else %}
-            <p>Bu bölüm için sayfa bulunamadı.</p>
-        {% endfor %}
+<div class="reader-container fit-width" id="reader-root" data-manga-id="{{ manga.id }}" data-chapter-id="{{ chapter.id }}">
+  {% for page in pages %}
+    <div class="manga-page" data-page-number="{{ page.number }}">
+      <img class="page-img" src="{{ page.image_path }}" alt="Sayfa {{ page.number }}" loading="lazy">
     </div>
+  {% else %}
+    <div class="section text-center">
+      <p class="text-muted">Bu bölüm için sayfa bulunamadı.</p>
+    </div>
+  {% endfor %}
 </div>
 
-<div class="nav-buttons-bottom mt-16" style="display: flex; justify-content: center; gap: 16px;">
+<div class="container mt-16 mb-16">
+  <div class="flex justify-center gap-4">
     {% if prev_chapter %}
-        <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=prev_chapter.id) }}" class="btn btn-outline">← Önceki Bölüm</a>
+      <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=prev_chapter.id) }}" class="btn btn-secondary">← Önceki Bölüm</a>
     {% endif %}
     {% if next_chapter %}
-        <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=next_chapter.id) }}" class="btn btn-primary">Sonraki Bölüm →</a>
+      <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=next_chapter.id) }}" class="btn btn-primary">Sonraki Bölüm →</a>
     {% endif %}
-</div>
-</section>
-
-<script>
-    function changeZoom(className) {
-        const container = document.getElementById('reader-root');
-        container.className = 'reader-container ' + className;
-        // Save preference
-        localStorage.setItem('reader-zoom', className);
-    }
-    
-    // Load preference
-    document.addEventListener('DOMContentLoaded', () => {
-        const saved = localStorage.getItem('reader-zoom');
-        if (saved) {
-            changeZoom(saved);
-        }
-    });
-
-    // Swipe detection
-    let touchStartX = 0;
-    let touchEndX = 0;
-    
-    const reader = document.getElementById('reader-root');
-    
-    reader.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-    });
-    
-    reader.addEventListener('touchend', e => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    });
-    
-    function handleSwipe() {
-        const threshold = 100; // min distance
-        const diff = touchStartX - touchEndX;
-        
-        if (Math.abs(diff) > threshold) {
-            if (diff > 0) {
-                // Swipe Left -> Next Chapter
-                const nextBtn = document.getElementById('next-btn');
-                if (nextBtn) nextBtn.click();
-            } else {
-                // Swipe Right -> Prev Chapter
-                const prevBtn = document.getElementById('prev-btn');
-                if (prevBtn) prevBtn.click();
-            }
-        }
-    }
-</script>
-
-<section class="section mt-16">
-  <h3>Yorumlar</h3>
-  <div class="comment-form">
-    <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}" class="form">
-      <input type="hidden" name="chapter_id" value="{{ chapter.id }}">
-      <textarea name="content" placeholder="Yorum yaz..." required></textarea>
-      <button type="submit" class="btn btn-outline">Yorum Gönder</button>
-    </form>
   </div>
-  <div class="comment-list mt-10">
+</div>
+
+<div class="comment-section">
+  <h3 class="mb-16">Bölüm Yorumları ({{ comments|length }})</h3>
+  
+  {% if is_authenticated %}
+    <div class="comment-form mb-16">
+      <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}" class="form">
+        <input type="hidden" name="chapter_id" value="{{ chapter.id }}">
+        <textarea name="content" placeholder="Bölüm hakkında ne düşünüyorsun?" required></textarea>
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary">Yorum Gönder</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+
+  <div class="comment-list">
     {% for c in comments %}
-      <div class="comment" id="comment-{{ c.id }}">
+      <div class="comment-card" id="comment-{{ c.id }}">
         <div class="comment-header">
           <div class="comment-user">
             <div class="comment-avatar">
@@ -120,50 +73,68 @@
             </div>
             <div class="comment-info">
               <div class="comment-username">{{ c.user.username }}</div>
-              <div class="comment-meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+              <div class="comment-meta">{{ c.created_at.strftime('%d %b %Y %H:%M') }}</div>
             </div>
           </div>
-          {% if current_user and c.user_id == current_user.id %}
-            <div class="comment-header-actions">
-              <button class="btn-delete" onclick="deleteComment({{ c.id }})">Sil</button>
-            </div>
+          {% if current_user and (c.user_id == current_user.id or current_user.is_admin) %}
+            <button class="btn-delete" onclick="deleteComment({{ c.id }})">Sil</button>
           {% endif %}
         </div>
-        <div class="comment-body">{{ c.content }}</div>
+        <div class="comment-body mt-4">{{ c.content }}</div>
       </div>
-    {% else %}
-      <p>Bu chapter için yorum bulunamadı.</p>
     {% endfor %}
   </div>
-</section>
+</div>
 
 <script>
+function changeZoom(className) {
+    const container = document.getElementById('reader-root');
+    container.className = 'reader-container ' + className;
+    localStorage.setItem('reader-zoom', className);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('reader-zoom');
+    if (saved) changeZoom(saved);
+});
+
+// Swipe & Navigation
+let touchStartX = 0;
+let touchEndX = 0;
+const reader = document.getElementById('reader-root');
+
+reader.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+}, {passive: true});
+
+reader.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+}, {passive: true});
+
+function handleSwipe() {
+    const threshold = 100;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > threshold) {
+        if (diff > 0) {
+            const nextBtn = document.getElementById('next-btn');
+            if (nextBtn) nextBtn.click();
+        } else {
+            const prevBtn = document.getElementById('prev-btn');
+            if (prevBtn) prevBtn.click();
+        }
+    }
+}
+
 function deleteComment(commentId) {
     if (!confirm('Bu yorumu silmek istediğinize emin misiniz?')) return;
-    
     fetch(`/comment/${commentId}`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(response => {
-        if (response.ok) {
-            const el = document.getElementById(`comment-${commentId}`);
-            if (el) {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(10px)';
-                setTimeout(() => el.remove(), 300);
-            }
-        } else {
-            alert('Yorum silinirken bir hata oluştu.');
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Bir ağ hatası oluştu.');
+        if (response.ok) document.getElementById(`comment-${commentId}`).remove();
     });
 }
 </script>
- 
 {% endblock %}

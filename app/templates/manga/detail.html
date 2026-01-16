@@ -1,54 +1,94 @@
 {% extends "base.html" %}
-{% block title %}{{ manga.title }}{% endblock %}
+{% block title %}{{ manga.title }} - Kuromanga{% endblock %}
 {% block content %}
-<section class="section">
-  <h2>{{ manga.title }}</h2>
-  {% if manga.description %}
-    <p class="card-desc">{{ manga.description }}</p>
-  {% endif %}
-  {% if last_read_chapter %}
-    <p>Son okuduğunuz bölüm: <a class="btn btn-outline btn-sm" href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=last_read_chapter.id) }}">Bölüm {{ last_read_chapter.number }}</a></p>
-  {% endif %}
-  <div class="actions my-16">
-    <form method="POST" action="{{ url_for('user_content.toggle_favorite', manga_id=manga.id) }}" class="inline">
-      <button class="btn btn-primary {{ 'on' if is_favorite else '' }}" type="submit">
-        {{ 'Favorilerden Çıkar' if is_favorite else 'Favorilere Ekle' }}
-      </button>
-    </form>
-    <form method="POST" action="{{ url_for('user_content.toggle_to_read', manga_id=manga.id) }}" class="inline">
-      <button class="btn btn-secondary {{ 'on' if is_to_read else '' }}" type="submit">
-        {{ 'Okunacaklardan Çıkar' if is_to_read else 'Okunacaklara Ekle' }}
-      </button>
-    </form>
-  </div>
-</section>
 
-<section class="section mt-16">
-  <h3>Bölümler</h3>
-  <ul class="list chapter-links">
-    {% for chapter in chapters %}
-      <li>
-        <a class="btn btn-outline btn-sm" href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=chapter.id) }}">
-          Bölüm {{ chapter.number }}{% if chapter.title %}{% endif %}
+<div class="manga-detail-header">
+  <div class="manga-detail-cover-wrap">
+    {% if comments and comments|length > 0 %}
+      {# Find first page of first chapter as cover if needed, but usually we have it in list #}
+    {% endif %}
+    <img class="manga-detail-cover" src="{{ chapters[0].pages[0].image_path if chapters and chapters[0].pages else '' }}" alt="{{ manga.title }}">
+  </div>
+  
+  <div class="manga-detail-info">
+    <h1 class="mb-4">{{ manga.title }}</h1>
+    
+    {% if manga.description %}
+      <p class="text-muted mb-8" style="font-size: 1.1rem; line-height: 1.6;">{{ manga.description }}</p>
+    {% endif %}
+
+    <div class="manga-stats mb-8">
+      <div class="stat-box">
+        <div class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700;">Bölümler</div>
+        <div style="font-size: 1.25rem; font-weight: 800;">{{ chapters|length }}</div>
+      </div>
+      {% if last_read_chapter %}
+        <div class="stat-box">
+          <div class="text-muted" style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700;">Kaldığınız Yer</div>
+          <div style="font-size: 1.25rem; font-weight: 800;">Bölüm {{ last_read_chapter.number }}</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="actions">
+      {% if chapters %}
+        <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=chapters[0].id) }}" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          İlk Bölümü Oku
         </a>
-      </li>
-    {% else %}
-      <li>Bu manga için henüz bölüm yok.</li>
-    {% endfor %}
-  </ul>
-</section>
+      {% endif %}
+      
+      <form method="POST" action="{{ url_for('user_content.toggle_favorite', manga_id=manga.id) }}" class="inline">
+        <button class="btn btn-secondary {{ 'on' if is_favorite else '' }}" type="submit">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="{{ 'currentColor' if is_favorite else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          {{ 'Favorilerde' if is_favorite else 'Favorilere Ekle' }}
+        </button>
+      </form>
 
-<section class="section mt-16">
-  <h3>Yorumlar</h3>
-  <div class="comment-form">
-    <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}" class="form">
-      <textarea name="content" placeholder="Yorum yaz..." required></textarea>
-      <button type="submit" class="btn btn-outline">Yorum Gönder</button>
-    </form>
+      <form method="POST" action="{{ url_for('user_content.toggle_to_read', manga_id=manga.id) }}" class="inline">
+        <button class="btn btn-secondary {{ 'on' if is_to_read else '' }}" type="submit">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="{{ 'currentColor' if is_to_read else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+          {{ 'Okuma Listesinde' if is_to_read else 'Okunacaklara Ekle' }}
+        </button>
+      </form>
+    </div>
   </div>
-  <div class="comment-list mt-10">
+</div>
+
+<div class="section">
+  <h3 class="mb-16">Bölümler</h3>
+  <div class="chapter-list">
+    {% for chapter in chapters|sort(attribute='number') %}
+      <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=chapter.id) }}" class="chapter-item">
+        Bölüm {{ chapter.number }}
+      </a>
+    {% else %}
+      <p class="text-muted">Bu manga için henüz bölüm bulunmuyor.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="comment-section">
+  <h3 class="mb-16">Yorumlar ({{ comments|length }})</h3>
+  
+  {% if is_authenticated %}
+    <div class="comment-form mb-16">
+      <form method="POST" action="{{ url_for('user_content.add_comment', manga_id=manga.id) }}" class="form">
+        <textarea name="content" placeholder="Düşüncelerini paylaş..." required></textarea>
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary">Yorum Gönder</button>
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <div class="stat-box text-center mb-16">
+      <p class="text-muted">Yorum yazmak için <a href="{{ url_for('auth.login') }}" style="color: var(--primary); font-weight: 700;">giriş yapmalısın</a>.</p>
+    </div>
+  {% endif %}
+
+  <div class="comment-list">
     {% for c in comments %}
-      <div class="comment" id="comment-{{ c.id }}">
+      <div class="comment-card" id="comment-{{ c.id }}">
         <div class="comment-header">
           <div class="comment-user">
             <div class="comment-avatar">
@@ -56,22 +96,22 @@
             </div>
             <div class="comment-info">
               <div class="comment-username">{{ c.user.username }}</div>
-              <div class="comment-meta">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+              <div class="comment-meta">{{ c.created_at.strftime('%d %b %Y %H:%M') }}</div>
             </div>
           </div>
-          {% if current_user and c.user_id == current_user.id %}
-            <div class="comment-header-actions">
-              <button class="btn-delete" onclick="deleteComment({{ c.id }})">Sil</button>
-            </div>
+          {% if current_user and (c.user_id == current_user.id or current_user.is_admin) %}
+            <button class="btn-delete" onclick="deleteComment({{ c.id }})" title="Yorumu Sil">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
           {% endif %}
         </div>
-        <div class="comment-body">{{ c.content }}</div>
+        <div class="comment-body mt-4">{{ c.content }}</div>
       </div>
     {% else %}
-      <p>Bu manga için yorum bulunamadı.</p>
+      <p class="text-center text-muted py-16">Henüz yorum yapılmamış. İlk yorumu sen yap!</p>
     {% endfor %}
   </div>
-</section>
+</div>
 
 <script>
 function deleteComment(commentId) {
@@ -79,9 +119,7 @@ function deleteComment(commentId) {
     
     fetch(`/comment/${commentId}`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(response => {
         if (response.ok) {

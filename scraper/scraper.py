@@ -378,8 +378,11 @@ def main() -> None:
     try:
         if args.chapters and args.start_url:
             output_dir = ""
-            start = 1
-            start_num = derive_chapter_number(args.start_url)
+            start_num_str = derive_chapter_number(args.start_url)
+            try:
+                start = int(start_num_str)
+            except Exception:
+                start = 1
             for i in range(args.chapters):
                 next_num = start + i
                 target_url = increment_chapter_url(args.start_url, next_num)
