@@ -9,6 +9,9 @@
 {% endif %}
 
 <h3>Chapters</h3>
+{% if last_read_chapter %}
+<p>Son okuduğunuz chapter: <a href="{{ url_for('manga.chapter_read', manga_id=manga.id, chapter_id=last_read_chapter.id) }}">Chapter {{ last_read_chapter.number }}</a></p>
+{% endif %}
 <ul>
     {% for chapter in chapters %}
         <li>
@@ -21,4 +24,3 @@
     {% endfor %}
 </ul>
 {% endblock %}
-

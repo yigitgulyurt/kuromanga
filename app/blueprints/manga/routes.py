@@ -1,4 +1,4 @@
-from flask import render_template, abort
+from flask import render_template, abort, session
 
 from app.blueprints.manga import manga_bp
 from app.services.manga_service import MangaService
@@ -22,9 +22,13 @@ def manga_detail(manga_id):
     manga, chapters = manga_service.get_manga_with_chapters(manga_id)
     if not manga:
         abort(404)
-    return render_template(
-        "manga/detail.html", manga=manga, chapters=chapters
-    )
+    last_read_chapter = None
+    user_id = session.get("user_id")
+    if user_id is not None:
+        progress = reading_progress_service.get_last_read_chapter(user_id, manga.id)
+        if progress:
+            last_read_chapter = ChapterService().chapter_repository.get_by_id(progress.chapter_id)
+    return render_template("manga/detail.html", manga=manga, chapters=chapters, last_read_chapter=last_read_chapter)
 
 
 @manga_bp.route("/manga/<int:manga_id>/chapters/<int:chapter_id>/read/")
@@ -35,8 +39,9 @@ def chapter_read(manga_id, chapter_id):
     chapter, pages = chapter_service.get_chapter_with_pages(chapter_id)
     if not chapter or chapter.manga_id != manga.id:
         abort(404)
-    user_id = 1
-    reading_progress_service.set_last_read_chapter(user_id, manga.id, chapter.id)
+    user_id = session.get("user_id")
+    if user_id is not None:
+        reading_progress_service.set_last_read_chapter(user_id, manga.id, chapter.id)
     return render_template(
         "manga/read.html",
         manga=manga,

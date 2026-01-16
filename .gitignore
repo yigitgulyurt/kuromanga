@@ -14,8 +14,7 @@ app/services/__pycache__/
 scraper/__pycache__/
 storage/
 scraper/README.md
-instance/
-
+instance/kuromanga.db
 
 
 

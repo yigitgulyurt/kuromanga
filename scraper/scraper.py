@@ -58,6 +58,12 @@ def parse_args() -> argparse.Namespace:
         help="Download only images with the specified HTML class attribute.",
     )
     parser.add_argument(
+        "--fallback-classes",
+        "-fc",
+        default="",
+        help="Comma-separated fallback HTML classes to try when --img-class yields no results.",
+    )
+    parser.add_argument(
         "--resume",
         "-r",
         action="store_true",
@@ -87,44 +93,61 @@ def derive_chapter_number(chapter_url: str) -> str:
     return "1"
 
 
-def extract_image_urls(html: str, base_url: str, required_class: Optional[str]) -> List[str]:
+def extract_image_urls(html: str, base_url: str, required_class: Optional[str], fallback_classes: List[str]) -> Tuple[List[str], Optional[str]]:
     soup = BeautifulSoup(html, "html.parser")
-    candidates = []
+    candidates: List[str] = []
+    used_class: Optional[str] = None
 
-    for img in soup.find_all("img"):
-        if required_class:
-            classes = img.get("class")
-            if not classes:
-                # allow string form too
-                cls_str = img.get("class", "")
-                if not cls_str:
-                    continue
-            match = False
-            if isinstance(classes, list):
-                match = required_class in [c.strip() for c in classes if c]
-            else:
-                try:
-                    tokens = str(classes).split()
-                    match = required_class in tokens
-                except Exception:
-                    match = False
-            if not match:
+    if required_class:
+        for img in soup.find_all("img", class_=required_class):
+            src = img.get("src")
+            if not src:
                 continue
-        src = img.get("src")
-        if not src:
-            continue
-        absolute = urljoin(base_url, src)
-        if not absolute:
-            continue
-        lower = absolute.lower()
-        if not (
-            lower.endswith(".jpg")
-            or lower.endswith(".jpeg")
-            or lower.endswith(".png")
-            or lower.endswith(".webp")
-        ):
-            continue
-        candidates.append(absolute)
+            absolute = urljoin(base_url, src)
+            if not absolute:
+                continue
+            lower = absolute.lower()
+            if not (lower.endswith(".jpg") or lower.endswith(".jpeg") or lower.endswith(".png") or lower.endswith(".webp")):
+                continue
+            candidates.append(absolute)
+        if candidates:
+            used_class = required_class
+    if not candidates and fallback_classes:
+        for fb in fallback_classes:
+            temp: List[str] = []
+            for img in soup.find_all("img", class_=fb):
+                src = img.get("src")
+                if not src:
+                    continue
+                absolute = urljoin(base_url, src)
+                if not absolute:
+                    continue
+                lower = absolute.lower()
+                if not (lower.endswith(".jpg") or lower.endswith(".jpeg") or lower.endswith(".png") or lower.endswith(".webp")):
+                    continue
+                temp.append(absolute)
+            if temp:
+                candidates = temp
+                used_class = fb
+                break
+    if not candidates:
+        temp2: List[str] = []
+        for img in soup.find_all("img"):
+            src = img.get("src")
+            if not src:
+                continue
+            absolute = urljoin(base_url, src)
+            if not absolute:
+                continue
+            lower = absolute.lower()
+            if not (lower.endswith(".jpg") or lower.endswith(".jpeg") or lower.endswith(".png") or lower.endswith(".webp")):
+                continue
+            if not re.search(r"chapter", lower):
+                continue
+            temp2.append(absolute)
+        if temp2:
+            candidates = temp2
+            used_class = "img[src*='chapter']"
 
     seen = set()
     unique_urls: List[str] = []
@@ -134,7 +157,7 @@ def extract_image_urls(html: str, base_url: str, required_class: Optional[str]) 
         seen.add(url)
         unique_urls.append(url)
 
-    return unique_urls
+    return unique_urls, used_class
 
 
 def build_output_directory(manga_slug: str, chapter_number: str) -> str:
@@ -230,18 +253,20 @@ def _signal_handler(signum, frame):
     raise SystemExit(1)
 
 
-def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], logger: RunLogger, resume: bool = False, required_class: Optional[str] = None) -> Tuple[str, int]:
+def scrape_chapter(chapter_url: str, manga_slug: str, allowed_exts: Set[str], logger: RunLogger, resume: bool = False, required_class: Optional[str] = None, fallback_classes: Optional[List[str]] = None) -> Tuple[str, int]:
     html = fetch_html(chapter_url)
 
-    image_urls = extract_image_urls(html, chapter_url, required_class)
-    if not image_urls:
+    urls, used_class = extract_image_urls(html, chapter_url, required_class, fallback_classes or [])
+    if not urls:
         raise RuntimeError("No image URLs were found on the provided page.")
+    logger.fallback_class_used = used_class
+    logger._write()
 
     chapter_number = derive_chapter_number(chapter_url)
     output_dir = build_output_directory(manga_slug, chapter_number)
     os.makedirs(output_dir, exist_ok=True)
 
-    image_urls = filter_by_formats(image_urls, allowed_exts)
+    image_urls = filter_by_formats(urls, allowed_exts)
     total = len(image_urls)
     logger.update_stats(manga=1, chapters=1, pages=total)
     written = 0
@@ -267,6 +292,11 @@ def main() -> None:
         tt = t.strip().lower()
         if tt in {"jpg", "jpeg", "png", "webp"} and tt not in allowed_tokens:
             allowed_tokens.append(tt)
+    fallback_classes: List[str] = []
+    for fc in (getattr(args, "fallback_classes", "") or "").split(","):
+        token = fc.strip()
+        if token and token not in fallback_classes:
+            fallback_classes.append(token)
     logger = RunLogger(
         component="scraper",
         run_type="scrape",
@@ -316,7 +346,7 @@ def main() -> None:
                         logger._write()
                     continue
 
-                output_dir, wrote = scrape_chapter(target_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None))
+                output_dir, wrote = scrape_chapter(target_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None), fallback_classes=fallback_classes)
                 if chapter_int is not None and wrote > 0:
                     logger.downloaded_chapters.append(chapter_int)
                     logger.last_completed_chapter = chapter_int
@@ -344,7 +374,7 @@ def main() -> None:
                 output_dir = build_output_directory(manga_slug, chapter_number)
                 logger.finish("success")
             else:
-                output_dir, wrote = scrape_chapter(chapter_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None))
+                output_dir, wrote = scrape_chapter(chapter_url, manga_slug, allowed_exts, logger, resume=args.resume, required_class=getattr(args, "img_class", None), fallback_classes=fallback_classes)
                 if chapter_int is not None and wrote > 0:
                     logger.downloaded_chapters.append(chapter_int)
                     logger.last_completed_chapter = chapter_int
