@@ -150,15 +150,52 @@
         </div>
     </div>
     <div class="footer-bottom container">
-        <p>&copy; 2024 Kuromanga. Tüm hakları saklıdır.</p>
+        <p>&copy; 2026 Kuromanga. Tüm hakları saklıdır.</p>
     </div>
 </footer>
 
-<button id="back-to-top" class="back-to-top" aria-label="Yukarı Çık">
+<!-- Global Elements -->
+<div id="toast-container" class="toast-container"></div>
+
+<button id="back-to-top" class="scroll-top" aria-label="Yukarı Çık">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
 </button>
 
 <script>
+    // Toast System
+    const toastContainer = document.getElementById('toast-container');
+    function showToast(message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        let icon = '';
+        if (type === 'success') icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        if (type === 'error') icon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+        
+        toast.innerHTML = `${icon}<span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        
+        // Trigger reflow for animation
+        toast.offsetHeight;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // Button Loading Helper
+    function setBtnLoading(btn, isLoading) {
+        if (isLoading) {
+            btn.classList.add('loading');
+            btn.disabled = true;
+        } else {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+    }
+
     const mobileToggle = document.getElementById('mobile-toggle');
     const navContent = document.getElementById('nav-content');
     const backToTop = document.getElementById('back-to-top');
@@ -172,10 +209,12 @@
             navContent.classList.remove('active');
             document.querySelector('.nav').classList.remove('menu-open');
             document.body.classList.remove('no-scroll');
+            document.documentElement.classList.remove('no-scroll');
         } else {
             navContent.classList.add('active');
             document.querySelector('.nav').classList.add('menu-open');
             document.body.classList.add('no-scroll');
+            document.documentElement.classList.add('no-scroll');
         }
     });
 
@@ -184,15 +223,16 @@
             navContent.classList.remove('active');
             document.querySelector('.nav').classList.remove('menu-open');
             document.body.classList.remove('no-scroll');
+            document.documentElement.classList.remove('no-scroll');
         }
     });
 
     // Back to Top
     window.addEventListener('scroll', () => {
         if (window.scrollY > 400) {
-            backToTop.classList.add('visible');
+            backToTop.classList.add('show');
         } else {
-            backToTop.classList.remove('visible');
+            backToTop.classList.remove('show');
         }
     });
 
@@ -213,6 +253,7 @@
     function openModal(modalId) {
         document.getElementById(modalId).classList.add('active');
         document.body.classList.add('no-scroll');
+        document.documentElement.classList.add('no-scroll');
         // Close mobile menu if open
         navContent.classList.remove('active');
         document.querySelector('.nav').classList.remove('menu-open');
@@ -222,6 +263,7 @@
         document.getElementById(modalId).classList.remove('active');
         if (!navContent.classList.contains('active')) {
             document.body.classList.remove('no-scroll');
+            document.documentElement.classList.remove('no-scroll');
         }
     }
 

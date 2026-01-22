@@ -51,8 +51,15 @@
                     </a>
                 {% else %}
                     <div class="empty-state">
-                        <p>Henüz favori manganız yok.</p>
-                        <a href="{{ url_for('manga.manga_list') }}" class="btn btn-primary btn-sm">Manga Keşfet</a>
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.84-8.84 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </div>
+                        <h3>Henüz Favorin Yok</h3>
+                        <p>Favorilerine eklediğin mangalar burada listelenir. Beğendiğin serileri takip etmek için harika bir yol!</p>
+                        <a href="{{ url_for('manga.manga_list') }}" class="btn btn-primary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x1="21" x2="16.65" y2="16.65"></line></svg>
+                            Manga Keşfet
+                        </a>
                     </div>
                 {% endfor %}
             </div>
@@ -84,7 +91,15 @@
                     </a>
                 {% else %}
                     <div class="empty-state">
-                        <p>Okuma listeniz boş.</p>
+                        <div class="empty-state-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        </div>
+                        <h3>Okuma Listen Boş</h3>
+                        <p>Daha sonra okumak istediğin mangaları buraya kaydedebilirsin. Unutma, en iyi hikayeler seni bekliyor!</p>
+                        <a href="{{ url_for('manga.manga_list') }}" class="btn btn-primary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            Manga Keşfet
+                        </a>
                     </div>
                 {% endfor %}
             </div>

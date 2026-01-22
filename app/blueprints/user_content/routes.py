@@ -17,13 +17,20 @@ def _require_user():
     return int(user_id)
 
 
-@user_content_bp.route("/manga/<int:manga_id>/comment", methods=["POST"])
-def add_comment(manga_id):
+@user_content_bp.route("/manga/<string:slug>/comment", methods=["POST"])
+def add_comment(slug):
     user_id = _require_user()
     if not user_id:
         if request.is_json:
             return jsonify({"error": "login_required"}), 401
         return redirect(url_for("auth.login"))
+    
+    manga = Manga.query.filter_by(slug=slug).first()
+    if not manga:
+        if request.is_json:
+            return jsonify({"error": "manga_not_found"}), 404
+        return redirect(url_for("manga.manga_list"))
+
     content = None
     chapter_id = None
     if request.is_json:
@@ -33,27 +40,37 @@ def add_comment(manga_id):
     else:
         content = (request.form.get("content") or "").strip()
         chapter_id = request.form.get("chapter_id")
+    
     if not content:
         if request.is_json:
             return jsonify({"error": "content_required"}), 400
-        manga = Manga.query.get(manga_id)
-        return redirect(url_for("manga.manga_detail", slug=manga.slug if manga else ''))
-    manga = Manga.query.get(manga_id)
-    if not manga:
-        if request.is_json:
-            return jsonify({"error": "manga_not_found"}), 404
-        return redirect(url_for("manga.manga_list"))
+        return redirect(url_for("manga.manga_detail", slug=manga.slug))
+    
     ch_obj = None
     if chapter_id:
         try:
             ch_obj = Chapter.query.get(int(chapter_id))
         except Exception:
             ch_obj = None
-    c = Comment(user_id=user_id, manga_id=manga_id, chapter_id=(ch_obj.id if ch_obj else None), content=content)
+    
+    c = Comment(user_id=user_id, manga_id=manga.id, chapter_id=(ch_obj.id if ch_obj else None), content=content)
     db.session.add(c)
     db.session.commit()
+    
     if request.is_json:
-        return jsonify({"status": "ok", "comment_id": c.id}), 201
+        user = User.query.get(user_id)
+        return jsonify({
+            "status": "ok",
+            "comment": {
+                "id": c.id,
+                "content": c.content,
+                "username": user.username,
+                "created_at": c.created_at.strftime('%d %b %Y %H:%M'),
+                "user_id": user.id,
+                "is_admin": user.is_admin
+            }
+        }), 201
+    
     target = url_for("manga.manga_detail", slug=manga.slug)
     if ch_obj:
         target = url_for("manga.chapter_read", slug=manga.slug, chapter_id=ch_obj.id)
@@ -99,50 +116,64 @@ def delete_comment(comment_id):
     return jsonify({"status": "ok"}), 200
 
 
-@user_content_bp.route("/manga/<int:manga_id>/favorite", methods=["POST"])
-def toggle_favorite(manga_id):
+@user_content_bp.route("/manga/<string:slug>/favorite", methods=["POST"])
+def toggle_favorite(slug):
     user_id = _require_user()
     if not user_id:
         if request.is_json:
             return jsonify({"error": "login_required"}), 401
         return redirect(url_for("auth.login"))
-    existing = Favorite.query.filter_by(user_id=user_id, manga_id=manga_id).first()
+    
+    manga = Manga.query.filter_by(slug=slug).first()
+    if not manga:
+        if request.is_json:
+            return jsonify({"error": "manga_not_found"}), 404
+        return redirect(url_for("manga.manga_list"))
+
+    existing = Favorite.query.filter_by(user_id=user_id, manga_id=manga.id).first()
     if existing:
         db.session.delete(existing)
         db.session.commit()
         result = {"status": "removed"}
     else:
-        f = Favorite(user_id=user_id, manga_id=manga_id)
+        f = Favorite(user_id=user_id, manga_id=manga.id)
         db.session.add(f)
         db.session.commit()
         result = {"status": "added"}
+    
     if request.is_json:
         return jsonify(result), 200
-    manga = Manga.query.get(manga_id)
-    return redirect(url_for("manga.manga_detail", slug=manga.slug if manga else ''))
+    return redirect(url_for("manga.manga_detail", slug=manga.slug))
 
 
-@user_content_bp.route("/manga/<int:manga_id>/to-read", methods=["POST"])
-def toggle_to_read(manga_id):
+@user_content_bp.route("/manga/<string:slug>/to-read", methods=["POST"])
+def toggle_to_read(slug):
     user_id = _require_user()
     if not user_id:
         if request.is_json:
             return jsonify({"error": "login_required"}), 401
         return redirect(url_for("auth.login"))
-    existing = ToRead.query.filter_by(user_id=user_id, manga_id=manga_id).first()
+    
+    manga = Manga.query.filter_by(slug=slug).first()
+    if not manga:
+        if request.is_json:
+            return jsonify({"error": "manga_not_found"}), 404
+        return redirect(url_for("manga.manga_list"))
+
+    existing = ToRead.query.filter_by(user_id=user_id, manga_id=manga.id).first()
     if existing:
         db.session.delete(existing)
         db.session.commit()
         result = {"status": "removed"}
     else:
-        t = ToRead(user_id=user_id, manga_id=manga_id)
+        t = ToRead(user_id=user_id, manga_id=manga.id)
         db.session.add(t)
         db.session.commit()
         result = {"status": "added"}
+    
     if request.is_json:
         return jsonify(result), 200
-    manga = Manga.query.get(manga_id)
-    return redirect(url_for("manga.manga_detail", slug=manga.slug if manga else ''))
+    return redirect(url_for("manga.manga_detail", slug=manga.slug))
 
 
 @user_content_bp.route("/profile", methods=["GET"])
