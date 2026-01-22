@@ -101,8 +101,8 @@
               <div class="comment-meta">{{ c.created_at.strftime('%d %b %Y %H:%M') }}</div>
             </div>
           </div>
-          {% if current_user and (c.user_id == current_user.id or current_user.is_admin) %}
-            <button class="btn-delete" onclick="deleteComment({{ c.id }})" title="Yorumu Sil">
+        {% if current_user and (c.user_id == current_user.id or current_user.is_admin) %}
+            <button class="btn-delete" data-comment-id="{{ c.id }}" onclick="deleteComment(this, event)" title="Yorumu Sil">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           {% endif %}
@@ -116,10 +116,7 @@
         </div>
         <h3 style="font-size: 1.25rem; margin-bottom: 8px;">Henüz Yorum Yok</h3>
         <p class="text-muted" style="margin-bottom: 20px; font-size: 0.95rem;">Bu bölüm hakkında ilk düşüncelerini sen paylaşmak ister misin?</p>
-        <a href="#comment-form" class="btn btn-secondary btn-sm" onclick="document.querySelector('textarea').focus()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-          İlk Yorumu Yap
-        </a>
+       
       </div>
     {% endfor %}
   </div>
@@ -224,7 +221,7 @@ function submitComment(e) {
                                 <div class="comment-meta">${comment.created_at}</div>
                             </div>
                         </div>
-                        <button class="btn-delete" onclick="deleteComment(${comment.id})" title="Yorumu Sil">
+                        <button class="btn-delete" data-comment-id="${comment.id}" onclick="deleteComment(this, event)" title="Yorumu Sil">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </div>
@@ -258,10 +255,10 @@ function submitComment(e) {
     });
 }
 
-function deleteComment(commentId) {
+function deleteComment(btn, event) {
     if (!confirm('Bu yorumu silmek istediğinize emin misiniz?')) return;
     
-    const btn = event.currentTarget;
+    const commentId = btn.dataset.commentId;
     const card = document.getElementById(`comment-${commentId}`);
     
     fetch(`/comment/${commentId}`, {
@@ -332,10 +329,10 @@ function handleSwipe() {
     const diff = touchStartX - touchEndX;
     if (Math.abs(diff) > threshold) {
         if (diff > threshold) { // Swipe left -> Next
-            const nextBtn = document.querySelector('.nav-link[href*="next"]');
+            const nextBtn = document.querySelector('.nav-next');
             if (nextBtn) nextBtn.click();
         } else if (diff < -threshold) { // Swipe right -> Prev
-            const prevBtn = document.querySelector('.nav-link[href*="prev"]');
+            const prevBtn = document.querySelector('.nav-prev');
             if (prevBtn) prevBtn.click();
         }
     }

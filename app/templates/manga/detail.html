@@ -7,7 +7,7 @@
     {% if comments and comments|length > 0 %}
       {# Find first page of first chapter as cover if needed, but usually we have it in list #}
     {% endif %}
-    <img class="manga-detail-cover" src="{{ chapters[0].pages[0].image_path if chapters and chapters[0].pages else '' }}" alt="{{ manga.title }}">
+    <img class="manga-detail-cover" src="{{ chapters[0].pages[0].image_path if chapters and chapters[0].pages and chapters[0].pages|length > 0 else '' }}" alt="{{ manga.title }}">
   </div>
   
   <div class="manga-detail-info">
@@ -106,7 +106,7 @@
             </div>
           </div>
           {% if current_user and (c.user_id == current_user.id or current_user.is_admin) %}
-            <button class="btn-delete" onclick="deleteComment({{ c.id }})" title="Yorumu Sil">
+            <button class="btn-delete" data-comment-id="{{ c.id }}" onclick="deleteComment(this, event)" title="Yorumu Sil">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           {% endif %}
@@ -235,7 +235,7 @@ function addComment(e) {
                                 <div class="comment-meta">${comment.created_at}</div>
                             </div>
                         </div>
-                        <button class="btn-delete" onclick="deleteComment(${comment.id})" title="Yorumu Sil">
+                        <button class="btn-delete" data-comment-id="${comment.id}" onclick="deleteComment(this, event)" title="Yorumu Sil">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </div>
@@ -270,9 +270,10 @@ function addComment(e) {
     });
 }
 
-function deleteComment(commentId) {
+function deleteComment(btn, event) {
     if (!confirm('Bu yorumu silmek istediğinize emin misiniz?')) return;
     
+    const commentId = btn.dataset.commentId;
     const el = document.getElementById(`comment-${commentId}`);
     el.style.opacity = '0.5';
     el.style.pointerEvents = 'none';
