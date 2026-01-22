@@ -15,12 +15,12 @@
       <h2>Bölüm {{ chapter.number }}</h2>
       <div class="flex gap-4">
         {% if prev_chapter %}
-          <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=prev_chapter.id) }}" class="btn btn-secondary btn-sm nav-link" onclick="handleNav(this)">
+          <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_number=prev_chapter.number) }}" class="btn btn-secondary btn-sm nav-link" onclick="handleNav(this)">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </a>
         {% endif %}
         {% if next_chapter %}
-          <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=next_chapter.id) }}" class="btn btn-primary btn-sm nav-link" onclick="handleNav(this)">
+          <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_number=next_chapter.number) }}" class="btn btn-primary btn-sm nav-link" onclick="handleNav(this)">
             Sonraki Bölüm
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </a>
@@ -52,13 +52,13 @@
 <div class="container mt-16 mb-16">
   <div class="flex justify-center gap-4">
     {% if prev_chapter %}
-      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=prev_chapter.id) }}" class="btn btn-secondary nav-link" onclick="handleNav(this)">
+      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_number=prev_chapter.number) }}" class="btn btn-secondary nav-link" onclick="handleNav(this)">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         Önceki Bölüm
       </a>
     {% endif %}
     {% if next_chapter %}
-      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=next_chapter.id) }}" class="btn btn-primary nav-link" onclick="handleNav(this)">
+      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_number=next_chapter.number) }}" class="btn btn-primary nav-link" onclick="handleNav(this)">
         Sonraki Bölüm
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
       </a>

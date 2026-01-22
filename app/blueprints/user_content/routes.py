@@ -73,7 +73,7 @@ def add_comment(slug):
     
     target = url_for("manga.manga_detail", slug=manga.slug)
     if ch_obj:
-        target = url_for("manga.chapter_read", slug=manga.slug, chapter_id=ch_obj.id)
+        target = url_for("manga.chapter_read", slug=manga.slug, chapter_number=ch_obj.number)
     return redirect(target)
 
 

@@ -32,7 +32,7 @@
 
     <div class="manga-actions mb-8">
       {% if chapters %}
-        <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=chapters[0].id) }}" class="btn btn-primary btn-lg">
+        <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_number=chapters[0].number) }}" class="btn btn-primary btn-lg">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           İlk Bölümü Oku
         </a>
@@ -62,7 +62,7 @@
   </div>
   <div class="chapter-list">
     {% for chapter in chapters|sort(attribute='number') %}
-      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_id=chapter.id) }}" class="chapter-item">
+      <a href="{{ url_for('manga.chapter_read', slug=manga.slug, chapter_number=chapter.number) }}" class="chapter-item">
         <span>Bölüm {{ chapter.number }}</span>
       </a>
     {% else %}

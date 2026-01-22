@@ -17,3 +17,10 @@ class ChapterService:
         pages = self.page_repository.get_for_chapter(chapter_id)
         return chapter, pages
 
+    def get_chapter_by_number_with_pages(self, manga_id, chapter_number):
+        chapter = self.chapter_repository.get_by_number(manga_id, chapter_number)
+        if not chapter:
+            return None, []
+        pages = self.page_repository.get_for_chapter(chapter.id)
+        return chapter, pages
+
