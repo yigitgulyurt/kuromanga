@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Çevrimdışı - Kuromanga{% endblock %}
+{% block content %}
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 20px;">
+    <div style="background: var(--bg-soft); padding: 40px; border-radius: var(--radius); border: 1px solid var(--border); max-width: 500px;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 24px;">
+            <path d="M16.72 11.06A5 5 0 0 0 15 10H9a5 5 0 0 0-5 5v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3a5 5 0 0 0-4.28-4.94z"></path>
+            <path d="M1 1l22 22"></path>
+            <path d="M16.72 11.06A5 5 0 0 1 20 15"></path>
+            <path d="M4 15a5 5 0 0 1 1.28-3.06"></path>
+            <path d="M8 6h.01"></path>
+            <path d="M12 4h.01"></path>
+            <path d="M16 6h.01"></path>
+        </svg>
+        <h1 style="font-size: 2rem; margin-bottom: 16px; color: #fff;">İnternet Bağlantısı Yok</h1>
+        <p style="color: var(--text-muted); margin-bottom: 32px; line-height: 1.6;">
+            Şu anda çevrimdışısınız. Daha önce okuduğunuz sayfalar önbellekte olabilir, ancak yeni bölümlere erişmek için internet bağlantısı gereklidir.
+        </p>
+        <button onclick="window.location.reload()" class="btn btn-primary">Yeniden Dene</button>
+    </div>
+</div>
+{% endblock %}

@@ -84,4 +84,23 @@ def create_app(config_object=None):
         except Exception:
             return {"current_user": None, "is_authenticated": False}
 
+    @app.route("/sw.js")
+    def serve_sw():
+        from flask import make_response
+        response = make_response(app.send_static_file("sw.js"))
+        response.headers["Content-Type"] = "application/javascript"
+        response.headers["Service-Worker-Allowed"] = "/"
+        return response
+
+    @app.route("/manifest.json")
+    def serve_manifest():
+        from flask import make_response
+        response = make_response(app.send_static_file("manifest.json"))
+        response.headers["Content-Type"] = "application/manifest+json"
+        return response
+
+    @app.route("/offline")
+    def offline():
+        return render_template("offline.html")
+
     return app

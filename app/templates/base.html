@@ -3,14 +3,24 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kuromanga">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/branding/icon-192.svg') }}">
     <title>{% block title %}Kuromanga{% endblock %}</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/branding/favicon.svg') }}" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body class="theme">
 <header class="nav">
     <div class="container nav-inner">
         <div class="brand">
-            <a href="{{ url_for('manga.manga_list') }}" class="brand-link">Kuromanga</a>
+            <a href="{{ url_for('manga.manga_list') }}" class="brand-link">
+                <img src="{{ url_for('static', filename='img/branding/favicon.svg') }}" alt="Kuromanga Logo" class="brand-logo">
+                <span class="brand-text">Kuromanga</span>
+            </a>
         </div>
         
         <button class="mobile-toggle" id="mobile-toggle" aria-label="Menu">
@@ -46,6 +56,10 @@
                     <button class="btn btn-outline" onclick="openModal('login-modal')">Giriş Yap</button>
                     <button class="btn btn-primary" onclick="openModal('register-modal')">Kayıt Ol</button>
                 {% endif %}
+                <button id="pwa-install-btn" class="btn btn-secondary" style="display: none; background: var(--primary); border: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Uygulamayı Yükle
+                </button>
             </nav>
         </div>
     </div>
@@ -290,6 +304,50 @@
                 closeModal(modal.id);
             });
         }
+    });
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('SW Registered', reg))
+                .catch(err => console.log('SW Registration Failed', err));
+        });
+    }
+
+    // PWA Install Prompt Logic
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwa-install-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        // Update UI notify the user they can add to home screen
+        if (installBtn) installBtn.style.display = 'flex';
+    });
+
+    if (installBtn) {
+        installBtn.addEventListener('click', (e) => {
+            // hide our user interface that shows our A2HS button
+            installBtn.style.display = 'none';
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the A2HS prompt');
+                } else {
+                    console.log('User dismissed the A2HS prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+    }
+
+    window.addEventListener('appinstalled', (evt) => {
+        console.log('Kuromanga was installed.');
+        if (installBtn) installBtn.style.display = 'none';
     });
 </script>
 </body>
