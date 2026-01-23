@@ -1,4 +1,4 @@
-from flask import Flask, session, render_template
+from flask import Flask, session, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -13,6 +13,14 @@ def create_app(config_object=None):
     app.config.from_object(config_object or DevelopmentConfig)
 
     db.init_app(app)
+
+    @app.before_request
+    def before_request():
+        from app.services.logger import log_activity
+        # Statik dosyaları ve storage (manga resimleri) isteklerini loglamayalım
+        excluded_paths = ['/static', '/storage']
+        if not any(request.path.startswith(p) for p in excluded_paths):
+            log_activity("TRAFFIC")
 
     with app.app_context():
         try:

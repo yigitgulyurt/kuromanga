@@ -8,6 +8,7 @@ from app.services.storage_health import storage_health
 from app.services.run_history import get_runs_status
 import shutil
 import os
+import json
 
 def _require_admin():
     user_id = session.get("user_id")
@@ -87,4 +88,58 @@ def status_data():
         },
         "storage_health": health_data,
         "disk_usage": disk_usage
+    })
+
+@status_bp.route("/logs")
+def get_logs():
+    is_admin = _require_admin()
+    if is_admin is None:
+        return jsonify({"error": "login_required"}), 401
+    if is_admin is False:
+        return jsonify({"error": "forbidden"}), 403
+    
+    log_dir = current_app.config.get("ACTIVITY_LOGS_PATH")
+    if not log_dir:
+        return jsonify({"logs": [], "total": 0})
+        
+    master_log = os.path.join(log_dir, "activity.log")
+    
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    username_filter = request.args.get('username')
+    event_filter = request.args.get('event')
+    
+    logs = []
+    total_count = 0
+    
+    if os.path.exists(master_log):
+        try:
+            with open(master_log, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                
+                # Filter logs
+                filtered_lines = []
+                for line in lines:
+                    try:
+                        entry = json.loads(line)
+                        if username_filter and entry.get('username') != username_filter:
+                            continue
+                        if event_filter and entry.get('event') != event_filter:
+                            continue
+                        filtered_lines.append(entry)
+                    except:
+                        continue
+                
+                # Sort by timestamp descending
+                filtered_lines.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+                
+                total_count = len(filtered_lines)
+                logs = filtered_lines[offset:offset + limit]
+                
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+            
+    return jsonify({
+        "logs": logs,
+        "total": total_count
     })

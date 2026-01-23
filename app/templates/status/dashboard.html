@@ -79,6 +79,66 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Sistem Logları -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 mt-16">
+            <div class="section-title-group">
+                <h2 class="text-2xl font-bold mb-1">Sistem Logları</h2>
+            </div>
+            <div class="log-controls-wrapper">
+                <div class="log-control-item">
+                    <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    <select id="log-event-filter">
+                        <option value="">Tüm Olaylar</option>
+                        <option value="TRAFFIC">Trafik</option>
+                        <option value="AUTH_LOGIN">Giriş</option>
+                        <option value="AUTH_REGISTER">Kayıt</option>
+                        <option value="AUTH_LOGOUT">Çıkış</option>
+                    </select>
+                </div>
+                <div class="log-control-item">
+                    <svg class="control-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="log-user-filter" placeholder="Kullanıcı Ara...">
+                </div>
+                <button id="refresh-logs" class="btn btn-refresh" title="Logları Yenile">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6m12-4a9 9 0 0 1-15 6.7L3 16"/></svg>
+                    <span>Yenile</span>
+                </button>
+            </div>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-border">
+            <table class="runs-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="whitespace-nowrap">Zaman</th>
+                        <th>Olay</th>
+                        <th>Kullanıcı</th>
+                        <th>IP</th>
+                        <th>Yol</th>
+                        <th>Metod</th>
+                        <th>Cihaz Bilgisi</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-list">
+                    <!-- Dinamik olarak dolacak -->
+                </tbody>
+            </table>
+        </div>
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 mb-12">
+            <div class="text-sm text-muted order-2 sm:order-1" id="logs-info">
+                Loglar yükleniyor...
+            </div>
+            <div class="flex gap-2 order-1 sm:order-2">
+                <button id="logs-prev" class="btn btn-secondary px-4 py-1" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Geri
+                </button>
+                <button id="logs-next" class="btn btn-secondary px-4 py-1" disabled>
+                    İleri
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -94,9 +154,96 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
+.whitespace-nowrap {
+    white-space: nowrap;
+}
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.status-badge.info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+}
+.status-badge.secondary {
+    background: rgba(156, 163, 175, 0.1);
+    color: #9ca3af;
+}
 </style>
 
 <script>
+    let logOffset = 0;
+    const logLimit = 50;
+
+    function getEventBadgeClass(event) {
+        if (event.startsWith('AUTH_')) return 'warning';
+        if (event === 'TRAFFIC') return 'info';
+        return 'secondary';
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+
+    function fetchLogs() {
+        const event = document.getElementById('log-event-filter').value;
+        const user = document.getElementById('log-user-filter').value;
+        
+        const logsList = document.getElementById('logs-list');
+        logsList.style.opacity = '0.5';
+        
+        let url = `/status/logs?limit=${logLimit}&offset=${logOffset}`;
+        if (event) url += `&event=${event}`;
+        if (user) url += `&username=${user}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                logsList.style.opacity = '1';
+                logsList.innerHTML = '';
+                
+                if (!data.logs || data.logs.length === 0) {
+                    logsList.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-muted">Log kaydı bulunamadı.</td></tr>';
+                } else {
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="whitespace-nowrap text-xs text-muted font-mono">${log.timestamp}</td>
+                            <td><span class="status-badge ${getEventBadgeClass(log.event)} text-[10px] py-0.5">${log.event}</span></td>
+                            <td><span class="font-medium text-sm">${log.username}</span></td>
+                            <td class="text-xs text-muted font-mono">${log.ip}</td>
+                            <td class="text-xs max-w-[150px] truncate" title="${log.path}">${log.path}</td>
+                            <td class="text-[10px] font-bold text-muted">${log.method}</td>
+                            <td class="text-[10px] text-muted truncate max-w-[200px]" title="${log.user_agent}">${log.user_agent}</td>
+                        `;
+                        logsList.appendChild(row);
+                    });
+                }
+
+                const currentPage = Math.floor(logOffset/logLimit) + 1;
+                const totalPages = Math.ceil(data.total / logLimit) || 1;
+                document.getElementById('logs-info').textContent = `Toplam ${data.total} log bulundu (Sayfa ${currentPage} / ${totalPages})`;
+                document.getElementById('logs-prev').disabled = logOffset === 0;
+                document.getElementById('logs-next').disabled = logOffset + logLimit >= data.total;
+            })
+            .catch(err => {
+                logsList.style.opacity = '1';
+                logsList.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-danger">Hata: ${err}</td></tr>`;
+            });
+    }
+
+    document.getElementById('refresh-logs').onclick = () => { logOffset = 0; fetchLogs(); };
+    document.getElementById('log-event-filter').onchange = () => { logOffset = 0; fetchLogs(); };
+    document.getElementById('log-user-filter').oninput = debounce(() => { logOffset = 0; fetchLogs(); }, 500);
+    document.getElementById('logs-prev').onclick = () => { logOffset = Math.max(0, logOffset - logLimit); fetchLogs(); };
+    document.getElementById('logs-next').onclick = () => { logOffset += logLimit; fetchLogs(); };
+
     document.getElementById('trigger-index').addEventListener('click', function() {
         const btn = this;
         const originalHtml = btn.innerHTML;
@@ -119,6 +266,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+        fetchLogs();
         // Verileri getir
         fetch('/status/data')
             .then(response => response.json())

@@ -28,13 +28,21 @@ def login():
         return render_template("auth/login.html", error="Şifre gerekli")
     existing = User.query.filter_by(username=username.strip()).first()
     if existing is None:
+        from app.services.logger import log_activity
+        log_activity("LOGIN_FAILED_USER_NOT_FOUND", username=username)
         if request.is_json:
             return {"error": "user_not_found"}, 404
         return render_template("auth/login.html", error="Kullanıcı bulunamadı")
     if not existing.check_password(password):
+        from app.services.logger import log_activity
+        log_activity("LOGIN_FAILED_WRONG_PASSWORD", username=existing.username)
         if request.is_json:
             return {"error": "invalid_credentials"}, 401
         return render_template("auth/login.html", error="Şifre yanlış")
+    
+    from app.services.logger import log_activity
+    log_activity("LOGIN_SUCCESS", username=existing.username)
+    
     session["user_id"] = existing.id
     if request.is_json:
         return {"status": "ok", "user_id": existing.id}, 200
@@ -43,6 +51,8 @@ def login():
 
 @auth_bp.route("/logout", methods=["POST", "GET"])
 def logout():
+    from app.services.logger import log_activity
+    log_activity("LOGOUT")
     session.pop("user_id", None)
     return redirect(url_for("manga.manga_list"))
 
@@ -82,6 +92,10 @@ def register():
     u.set_password(password)
     db.session.add(u)
     db.session.commit()
+    
+    from app.services.logger import log_activity
+    log_activity("REGISTER_SUCCESS", username=u.username)
+    
     session["user_id"] = u.id
     if request.is_json:
         return {"status": "ok", "user_id": u.id}, 201
