@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Uygulamayı Yükle - Kuromanga{% endblock %}
+{% block content %}
+<div class="install-container" style="max-width: 800px; margin: 40px auto; padding: 0 20px;">
+    <div class="install-card" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+        <div class="install-icon-wrapper" style="margin-bottom: 30px;">
+            <img src="{{ url_for('static', filename='img/branding/icon-512.svg') }}" alt="Kuromanga" style="width: 120px; height: 120px; border-radius: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.2);">
+        </div>
+        
+        <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 16px; color: #fff;">Kuromanga'yı Yükle</h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin-bottom: 40px;">
+            Daha hızlı erişim, çevrimdışı okuma desteği ve tam ekran deneyimi için Kuromanga'yı cihazınıza bir uygulama olarak yükleyin.
+        </p>
+
+        <!-- Dynamic Content based on Platform -->
+        <div id="install-action-area">
+            <!-- Desktop/Android Install Button -->
+            <div id="pwa-install-section" style="display: none;">
+                <div id="desktop-qr-section" style="display: none; flex-direction: column; align-items: center; gap: 20px;">
+                    <div style="background: white; padding: 15px; border-radius: 15px; display: inline-block;">
+                        <img id="pwa-qr-code" src="" alt="QR Code" style="width: 180px; height: 180px; display: block;">
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 300px;">
+                        Telefonunuz ile QR'ı okutarak uygulamayı anında indirebilirsiniz.
+                    </p>
+                </div>
+                <button id="pwa-page-install-btn" class="btn btn-primary" style="padding: 16px 40px; font-size: 1.2rem; gap: 12px; display: none;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Hemen Yükle
+                </button>
+            </div>
+
+            <!-- iOS Instructions -->
+            <div id="ios-install-section" style="display: none; text-align: left; background: rgba(255,255,255,0.03); padding: 24px; border-radius: var(--radius); border: 1px solid var(--border);">
+                <h3 style="color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path><path d="M12 6v6l4 2"></path></svg>
+                    iPhone / iPad için Yükleme:
+                </h3>
+                <ol style="color: var(--text-muted); padding-left: 20px; line-height: 2;">
+                    <li>Safari tarayıcısında alt kısımdaki <strong style="color: #fff;">"Paylaş"</strong> (kare içinde yukarı ok) simgesine dokunun.</li>
+                    <li>Açılan menüde aşağı kaydırarak <strong style="color: #fff;">"Ana Ekrana Ekle"</strong> seçeneğini bulun.</li>
+                    <li>Sağ üstteki <strong style="color: #fff;">"Ekle"</strong> butonuna basarak işlemi tamamlayın.</li>
+                </ol>
+            </div>
+
+            <!-- Already Installed -->
+            <div id="already-installed-section" style="display: none; color: var(--success);">
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 20px; border-radius: var(--radius); border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    <p style="font-weight: 700; font-size: 1.2rem;">Uygulama Zaten Yüklü!</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; mt-2;">Keyifli okumalar dileriz.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 50px; border-top: 1px solid var(--border); padding-top: 40px;">
+            <div class="feature-item">
+                <div style="color: var(--primary); margin-bottom: 12px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px;">Daha Hızlı</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Anında açılır, takılmadan çalışır.</p>
+            </div>
+            <div class="feature-item">
+                <div style="color: var(--primary); margin-bottom: 12px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px;">Koyu Tema</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Göz yormayan gece modu.</p>
+            </div>
+            <div class="feature-item">
+                <div style="color: var(--primary); margin-bottom: 12px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                </div>
+                <h4 style="color: #fff; margin-bottom: 8px;">Tam Ekran</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Tarayıcı çubukları olmadan okuyun.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoInstall = urlParams.get('action') === 'install';
+    
+    const pwaSection = document.getElementById('pwa-install-section');
+    const qrSection = document.getElementById('desktop-qr-section');
+    const qrImage = document.getElementById('pwa-qr-code');
+    const iosSection = document.getElementById('ios-install-section');
+    const installedSection = document.getElementById('already-installed-section');
+    const pageInstallBtn = document.getElementById('pwa-page-install-btn');
+
+    if (isStandalone) {
+        installedSection.style.display = 'block';
+    } else if (isIos) {
+        iosSection.style.display = 'block';
+    } else {
+        pwaSection.style.display = 'block';
+        
+        if (!isMobile) {
+            // Desktop: Show QR Code pointing to this page with auto-install flag
+            qrSection.style.display = 'flex';
+            const installUrl = window.location.href + (window.location.href.includes('?') ? '&' : '?') + 'action=install';
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(installUrl)}&bgcolor=ffffff&color=000000&margin=1`;
+        } else {
+            // Mobile (Android/Other): Show Install Button
+            pageInstallBtn.style.display = 'flex';
+            
+            // Function to trigger install prompt
+            const triggerAutoInstall = () => {
+                if (window.deferredPrompt) {
+                    window.deferredPrompt.prompt();
+                    window.deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            installedSection.style.display = 'block';
+                            pwaSection.style.display = 'none';
+                        }
+                        window.deferredPrompt = null;
+                    });
+                    return true;
+                }
+                return false;
+            };
+
+            // If redirected from QR, try to trigger prompt automatically
+            if (autoInstall) {
+                // If already ready
+                if (window.deferredPrompt) {
+                    setTimeout(triggerAutoInstall, 1000);
+                }
+                // Listen for readiness
+                window.addEventListener('pwa-prompt-ready', () => {
+                    setTimeout(triggerAutoInstall, 500);
+                });
+            }
+        }
+        
+        // Use the global deferredPrompt if available
+        if (pageInstallBtn) {
+            pageInstallBtn.addEventListener('click', () => {
+                if (window.deferredPrompt) {
+                    window.deferredPrompt.prompt();
+                    window.deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            pwaSection.style.display = 'none';
+                            installedSection.style.display = 'block';
+                        }
+                        window.deferredPrompt = null;
+                    });
+                } else {
+                    alert('Yükleme şu an başlatılamıyor. Tarayıcı menüsündeki (3 nokta) "Uygulamayı Yükle" veya "Ana Ekrana Ekle" seçeneğini kullanabilirsiniz.');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}
+	

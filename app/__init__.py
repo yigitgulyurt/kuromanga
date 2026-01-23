@@ -103,4 +103,8 @@ def create_app(config_object=None):
     def offline():
         return render_template("offline.html")
 
+    @app.route("/install")
+    def install():
+        return render_template("install.html")
+
     return app

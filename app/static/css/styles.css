@@ -156,6 +156,7 @@ h4 { font-size: 1.25rem; }
 
 .brand-text {
   background: linear-gradient(135deg, #fff 0%, var(--text-muted) 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -335,6 +336,91 @@ h4 { font-size: 1.25rem; }
   }
 }
 
+/* PWA Install Widget */
+.pwa-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transform: translateY(150%);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 280px;
+  cursor: pointer;
+}
+
+.pwa-widget.show {
+  transform: translateY(0);
+}
+
+.pwa-widget:hover {
+  border-color: var(--primary);
+  background: var(--bg-soft);
+}
+
+.pwa-widget-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pwa-widget-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwa-widget-title {
+  display: block;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.pwa-widget-desc {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pwa-widget-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.pwa-widget-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .pwa-widget {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+  }
+}
 /* Buttons */
 .btn {
   display: inline-flex;

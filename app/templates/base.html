@@ -12,6 +12,17 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/branding/favicon.svg') }}" type="image/svg+xml">
     <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script>
+        // Global PWA prompt handler - initialized as early as possible
+        window.deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+            console.log('PWA beforeinstallprompt event captured');
+            // Notify other scripts that might be waiting
+            window.dispatchEvent(new CustomEvent('pwa-prompt-ready'));
+        });
+    </script>
 </head>
 <body class="theme">
 <header class="nav">
@@ -138,6 +149,18 @@
     {% block content %}{% endblock %}
 </main>
 
+<!-- PWA Install Widget -->
+<div id="pwa-widget" class="pwa-widget">
+    <img src="{{ url_for('static', filename='img/branding/icon-192.svg') }}" alt="Kuromanga" class="pwa-widget-icon">
+    <div class="pwa-widget-content">
+        <span class="pwa-widget-title">Uygulamayı İndir</span>
+        <span class="pwa-widget-desc">Daha iyi bir deneyim için yükle</span>
+    </div>
+    <button class="pwa-widget-close" id="pwa-widget-close" aria-label="Kapat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+</div>
+
 <footer class="footer">
     <div class="container footer-inner">
         <div class="footer-brand">
@@ -148,6 +171,7 @@
             <div class="footer-group">
                 <h4>Hızlı Menü</h4>
                 <a href="{{ url_for('manga.manga_list') }}">Mangalar</a>
+                <a href="/install">Uygulamayı Yükle</a>
                 {% if current_user and current_user.is_admin %}
                     <a href="{{ url_for('status.dashboard') }}">Yönetim</a>
                 {% endif %}
@@ -314,34 +338,82 @@
         });
     }
 
-    // PWA Install Prompt Logic
-    let deferredPrompt;
+    // PWA Install UI Logic
     const installBtn = document.getElementById('pwa-install-btn');
+    const pwaWidget = document.getElementById('pwa-widget');
+    const pwaWidgetClose = document.getElementById('pwa-widget-close');
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        // Update UI notify the user they can add to home screen
+    // Check if user dismissed the widget before
+    const isWidgetDismissed = localStorage.getItem('pwa-widget-dismissed');
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    const showInstallUI = () => {
         if (installBtn) installBtn.style.display = 'flex';
+        
+        // Show widget if not standalone and not dismissed
+        if (!isStandalone && !isWidgetDismissed && pwaWidget) {
+            setTimeout(() => {
+                pwaWidget.classList.add('show');
+            }, 3000); // Show after 3 seconds
+        }
+    };
+
+    // If prompt is already captured, show UI
+    if (window.deferredPrompt) {
+        showInstallUI();
+    }
+
+    // Listen for prompt readiness
+    window.addEventListener('pwa-prompt-ready', () => {
+        showInstallUI();
     });
 
-    if (installBtn) {
-        installBtn.addEventListener('click', (e) => {
-            // hide our user interface that shows our A2HS button
-            installBtn.style.display = 'none';
-            // Show the prompt
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            deferredPrompt.userChoice.then((choiceResult) => {
+    // iOS specific widget show (since beforeinstallprompt doesn't fire on iOS)
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIos && !isStandalone && !isWidgetDismissed && pwaWidget) {
+        setTimeout(() => {
+            pwaWidget.classList.add('show');
+        }, 3000);
+    }
+
+    const triggerInstall = () => {
+        if (window.deferredPrompt) {
+            if (installBtn) installBtn.style.display = 'none';
+            if (pwaWidget) pwaWidget.classList.remove('show');
+            
+            window.deferredPrompt.prompt();
+            window.deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
                     console.log('User accepted the A2HS prompt');
                 } else {
                     console.log('User dismissed the A2HS prompt');
+                    if (installBtn) installBtn.style.display = 'flex';
                 }
-                deferredPrompt = null;
+                window.deferredPrompt = null;
             });
+        } else {
+            window.location.href = '/install';
+        }
+    };
+
+    if (installBtn) {
+        installBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerInstall();
+        });
+    }
+
+    if (pwaWidget) {
+        pwaWidget.addEventListener('click', () => {
+            triggerInstall();
+        });
+    }
+
+    if (pwaWidgetClose) {
+        pwaWidgetClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pwaWidget.classList.remove('show');
+            localStorage.setItem('pwa-widget-dismissed', 'true');
         });
     }
 
